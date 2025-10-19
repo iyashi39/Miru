@@ -207,7 +207,6 @@ namespace Miru.ViewModels
                 UserSettings.AgeRating = value;
 
                 // update displayed animes
-                // TODO: add age rating filter
                 DbService.ChangeDisplayedAnimeList(SelectedDisplayedAnimeList, SelectedTimeZone, SelectedDisplayedAnimeType, CurrentAnimeNameFilter, value);
                 NotifyOfPropertyChange(() => SelectedAgeRating);
             }
