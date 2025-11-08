@@ -1,6 +1,6 @@
-﻿// Copyright (c) 2022 iyarashii @ https://github.com/iyarashii 
+﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
 // Licensed under the GNU General Public License v3.0,
-// go to https://github.com/iyarashii/Miru/blob/master/LICENSE for full license details.
+// go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -16,7 +16,7 @@ using System.Windows.Markup;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Miru")]
-[assembly: AssemblyCopyright("Copyright © Iyarashii 2022")]
+[assembly: AssemblyCopyright("Copyright © iyashi39 2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: InternalsVisibleTo("Miru.Tests")]
