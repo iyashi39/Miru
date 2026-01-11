@@ -397,6 +397,14 @@ namespace MiruDatabaseLogicLayer
                     {
                         modelToBeUpdated.AgeRating = animeInfo.Rating;
                     }
+                    if (modelToBeUpdated.OpeningThemes == null || modelToBeUpdated.OpeningThemes == "OP\n")
+                    {
+                        modelToBeUpdated.OpeningThemes = JsonConvert.SerializeObject(animeInfo.OpeningTheme);
+                    }
+                    if (modelToBeUpdated.EndingThemes == null || modelToBeUpdated.EndingThemes == "ED\n")
+                    {
+                        modelToBeUpdated.EndingThemes = JsonConvert.SerializeObject(animeInfo.EndingTheme);
+                    }
                 }
                 else
                 {
