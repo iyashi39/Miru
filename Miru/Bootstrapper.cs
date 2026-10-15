@@ -10,6 +10,7 @@ using Miru.ViewModels;
 using System.Windows;
 using JikanDotNet;
 using System;
+using System.IO;
 using MiruLibrary.Settings;
 using MiruLibrary;
 using System.IO.Abstractions;
@@ -81,12 +82,14 @@ namespace Miru
 
         protected override async void OnStartup(object sender, StartupEventArgs e)
         {
+            // store the local sqlite database in %LOCALAPPDATA%\Miru so the app works
+            // without SQL Server / LocalDB installed
+            var appDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Miru");
+            Directory.CreateDirectory(appDataFolder);
+            AppDomain.CurrentDomain.SetData("DataDirectory", appDataFolder);
+
             // set starting view for this app
             DisplayRootViewFor<IShellViewModel>();
-
-            var sqLocalDbPresent = Container.Resolve<ShellViewModel>().CheckSqlLocalDbInstallationPresence();
-            if (!sqLocalDbPresent)
-                await Container.Resolve<ShellViewModel>().OpenNoLocalDbInfoDialog();
         }
 
         protected override void OnExit(object sender, EventArgs e)

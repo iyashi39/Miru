@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\EntityFramework.6.4.0\build\EntityFramework.props" Condition="Exists('..\packages\EntityFramework.6.4.0\build\EntityFramework.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -55,8 +55,15 @@
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.4.0\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
-    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.4.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    <Reference Include="System.Data.SQLite">
+      <HintPath>..\packages\System.Data.SQLite.Core.1.0.119\lib\net45\System.Data.SQLite.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Data.SQLite.EF6">
+      <HintPath>..\packages\System.Data.SQLite.EF6.1.0.119\lib\net45\System.Data.SQLite.EF6.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <Private>True</Private>
     </Reference>
     <Reference Include="JikanDotNet, Version=1.6.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\JikanDotNet.1.6.0\lib\netstandard2.0\JikanDotNet.dll</HintPath>
@@ -64,8 +71,8 @@
     <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.1.1.0\lib\net461\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -86,8 +93,9 @@
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.7.1\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
-    <Reference Include="System.Text.Encodings.Web, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Text.Encodings.Web.4.7.1\lib\net461\System.Text.Encodings.Web.dll</HintPath>
+    <Reference Include="System.Text.Encodings.Web">
+      <HintPath>..\packages\System.Text.Encodings.Web.4.7.2\lib\net461\System.Text.Encodings.Web.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
     </Reference>
     <Reference Include="System.Text.Json, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Text.Json.4.7.2\lib\net461\System.Text.Json.dll</HintPath>
@@ -108,103 +116,9 @@
   <ItemGroup>
     <Compile Include="Data\Interfaces\IMiruDbContext.cs" />
     <Compile Include="Data\Interfaces\IMiruDbService.cs" />
-    <Compile Include="Data\Migrations\202001251554307_AddSyncedUsersTable.cs" />
-    <Compile Include="Data\Migrations\202001251554307_AddSyncedUsersTable.Designer.cs">
-      <DependentUpon>202001251554307_AddSyncedUsersTable.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202001252346182_AddAnimeAiringTimesTable.cs" />
-    <Compile Include="Data\Migrations\202001252346182_AddAnimeAiringTimesTable.Designer.cs">
-      <DependentUpon>202001252346182_AddAnimeAiringTimesTable.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202001261232547_ModifyAnimeAiringTimeModel.cs" />
-    <Compile Include="Data\Migrations\202001261232547_ModifyAnimeAiringTimeModel.Designer.cs">
-      <DependentUpon>202001261232547_ModifyAnimeAiringTimeModel.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202002101159035_RenameAnimeAiringTimesTable.cs" />
-    <Compile Include="Data\Migrations\202002101159035_RenameAnimeAiringTimesTable.Designer.cs">
-      <DependentUpon>202002101159035_RenameAnimeAiringTimesTable.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202002181240582_UpdateMiruAiringAnimeModel.cs" />
-    <Compile Include="Data\Migrations\202002181240582_UpdateMiruAiringAnimeModel.Designer.cs">
-      <DependentUpon>202002181240582_UpdateMiruAiringAnimeModel.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202003151434418_AddCurrentlyAiringFlag.cs" />
-    <Compile Include="Data\Migrations\202003151434418_AddCurrentlyAiringFlag.Designer.cs">
-      <DependentUpon>202003151434418_AddCurrentlyAiringFlag.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202003151920351_AddAnimeType.cs" />
-    <Compile Include="Data\Migrations\202003151920351_AddAnimeType.Designer.cs">
-      <DependentUpon>202003151920351_AddAnimeType.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202004091158179_AddLocalImagePathToMiruAnimeModel.cs" />
-    <Compile Include="Data\Migrations\202004091158179_AddLocalImagePathToMiruAnimeModel.Designer.cs">
-      <DependentUpon>202004091158179_AddLocalImagePathToMiruAnimeModel.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202006071325437_RenameToMiruAnimeModelsColumn.cs" />
-    <Compile Include="Data\Migrations\202006071325437_RenameToMiruAnimeModelsColumn.Designer.cs">
-      <DependentUpon>202006071325437_RenameToMiruAnimeModelsColumn.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202104171832312_AddIsOnSenpaiField.cs" />
-    <Compile Include="Data\Migrations\202104171832312_AddIsOnSenpaiField.designer.cs">
-      <DependentUpon>202104171832312_AddIsOnSenpaiField.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202206221602412_AddDroppedFlag.cs" />
-    <Compile Include="Data\Migrations\202206221602412_AddDroppedFlag.designer.cs">
-      <DependentUpon>202206221602412_AddDroppedFlag.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202304161215113_AddOpeningsAndEndings.cs" />
-    <Compile Include="Data\Migrations\202304161215113_AddOpeningsAndEndings.designer.cs">
-      <DependentUpon>202304161215113_AddOpeningsAndEndings.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\202504112236232_AddAgeRating.cs" />
-    <Compile Include="Data\Migrations\202504112236232_AddAgeRating.Designer.cs">
-      <DependentUpon>202504112236232_AddAgeRating.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migrations\Configuration.cs" />
     <Compile Include="Data\MiruDbContext.cs" />
     <Compile Include="Data\MiruDbService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Data\Migrations\202001251554307_AddSyncedUsersTable.resx">
-      <DependentUpon>202001251554307_AddSyncedUsersTable.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202001252346182_AddAnimeAiringTimesTable.resx">
-      <DependentUpon>202001252346182_AddAnimeAiringTimesTable.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202001261232547_ModifyAnimeAiringTimeModel.resx">
-      <DependentUpon>202001261232547_ModifyAnimeAiringTimeModel.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202002101159035_RenameAnimeAiringTimesTable.resx">
-      <DependentUpon>202002101159035_RenameAnimeAiringTimesTable.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202002181240582_UpdateMiruAiringAnimeModel.resx">
-      <DependentUpon>202002181240582_UpdateMiruAiringAnimeModel.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202003151434418_AddCurrentlyAiringFlag.resx">
-      <DependentUpon>202003151434418_AddCurrentlyAiringFlag.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202003151920351_AddAnimeType.resx">
-      <DependentUpon>202003151920351_AddAnimeType.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202004091158179_AddLocalImagePathToMiruAnimeModel.resx">
-      <DependentUpon>202004091158179_AddLocalImagePathToMiruAnimeModel.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202006071325437_RenameToMiruAnimeModelsColumn.resx">
-      <DependentUpon>202006071325437_RenameToMiruAnimeModelsColumn.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202104171832312_AddIsOnSenpaiField.resx">
-      <DependentUpon>202104171832312_AddIsOnSenpaiField.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202206221602412_AddDroppedFlag.resx">
-      <DependentUpon>202206221602412_AddDroppedFlag.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202304161215113_AddOpeningsAndEndings.resx">
-      <DependentUpon>202304161215113_AddOpeningsAndEndings.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Data\Migrations\202504112236232_AddAgeRating.resx">
-      <DependentUpon>202504112236232_AddAgeRating.cs</DependentUpon>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MiruLibrary\MiruLibrary.csproj">

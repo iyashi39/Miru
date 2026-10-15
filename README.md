@@ -6,7 +6,7 @@ Miru is a WPF app used to display data from the [jikan](https://github.com/Ervie
 Idea for the app is based on [senpai](http://www.senpai.moe/) a great site that shows airing anime in a neat way.  
 It lets you display airing animes from the user's MAL watching list. Also it can display list of TV animes from the current season.
 This app displays airing animes for each day of the week in the specified timezone.  
-It uses EF6 and SQL Server's LocalDB to store the data.
+It uses EF6 and SQLite to store the data.
 
 SonarQube quality gate:
 ![SonarQube result](https://github.com/iyarashii/Miru/assets/38395954/22de7f95-d45e-4656-af96-f7d2c75e4801)
@@ -42,27 +42,9 @@ You can get a list of all animes in the current season by clicking `Get Shows Fr
 
 # Building
 Build the solution with Visual Studio 2022.
-# Installation guide for SQL Server LocalDB
-### Follow these steps to install on Windows 10:
 
-1.  **Check if you have LocalDB installed on your PC:**
-    1. Open Control Panel.
-    2. Click Programs > Uninstall a program.
-    3. Search for `localdb`.
-    4. If you see `SQL Server 2016 LocalDB` or newer go to step 3 otherwise go to step 2. 
-    ![Image of SQL Server 2016 LocalDB in control panel](https://i.imgur.com/3WApAAy.png)
-
-2.  **Download and install LocalDB:**
-    1. Download the LocalDB from [here](https://www.microsoft.com/en-us/download/confirmation.aspx?id=56840).
-    2. Run the downloaded `SQLServer2016-SSEI-Expr.exe`.
-    3. Select `Download Media`.
-    ![Step 1 of installation](https://i.imgur.com/So90kQ2.png)
-    4. Select preferred language and download location, select `LocalDB` as a package.
-    ![Step 2 of installation](https://i.imgur.com/ryTqeU9.png)
-    5. Click `Download` and wait for the download to complete.
-    6. Run downloaded `SqlLocalDB.msi` installer.
-
-3.  **Run the app using Miru.exe.**
+## Database
+The app uses a local SQLite database file (`MiruDatabase.sqlite`) stored in `%LOCALAPPDATA%\Miru\`. No SQL Server / LocalDB installation is required — the database is created automatically on first run. Existing LocalDB databases are not migrated, so synced data has to be downloaded again after switching to SQLite.
 # Changelog
 For older changes go to the releases page and browse older releases.
 ### Miru 2.4
