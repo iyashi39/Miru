@@ -12,6 +12,5 @@ namespace MiruLibrary.Models
         public AgeRating AgeRating { get; set; } = AgeRating.Any;
         public bool GetDroppedAnimeData { get; set; } = true;
         public double WatchingStatusHighlightOpacity { get; set; } = 0.66;
-        public string SenpaiDataSourceUrl { get; set; } = @"https://www.senpai.moe/export.php?type=json&src=spring2025";
     }
 }

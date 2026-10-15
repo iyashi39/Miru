@@ -62,7 +62,7 @@ namespace Miru.Tests.ModelsTests
         [InlineData(AnimeListType.AiringAndWatching, "Airing & Watching", typeof(AnimeListType))]
         [InlineData(AnimeListType.Watching, "Watching", typeof(AnimeListType))]
         [InlineData(AnimeListType.Season, "Current Season", typeof(AnimeListType))]
-        [InlineData(AnimeListType.Senpai, "Senpai - Current Season", typeof(AnimeListType))]
+
         public void ConvertTo_GivenDescriptionAttribute_ReturnsDescription(
             object testValue, string expectedDescription, Type enumType)
         {

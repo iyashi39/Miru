@@ -312,13 +312,7 @@ namespace Miru.ViewModels
             }
         }
 
-        public string SenpaiUrl 
-        { 
-            get => UserSettings.SenpaiDataSourceUrl; 
-            set => UserSettings.SenpaiDataSourceUrl = value;
-        }
-
-        // stores text that says the username of the last synced user
+                // stores text that says the username of the last synced user
         public string MalUserName
         {
             get { return _malUserName; }
@@ -592,26 +586,7 @@ namespace Miru.ViewModels
             CurrentAnimeNameFilter = string.Empty;
         }
 
-        // event handler for "Update data from senpai" button
-        public async Task UpdateSenpaiData()
-        {
-            ContentDialog.Config("Update data from senpai.moe?");
-
-            UpdateAppStatus(MiruAppStatus.Busy);
-
-            // display confirmation pop-up window
-            var result = await ContentDialog.ShowAsync();
-
-            if (result == ModernWpf.Controls.ContentDialogResult.Primary)
-            {
-                UpdateAppStatus(MiruAppStatus.Busy, "Updating data from senpai...");
-                FileSystemService.UpdateSenpaiData();
-            }
-
-            UpdateAppStatus(MiruAppStatus.Idle);
-        }
-
-        // opens MAL anime page
+                // opens MAL anime page
         public Process OpenAnimeURL(string URL)
         {
             return SystemService.StartProcess(URL);

@@ -15,7 +15,5 @@ namespace MiruLibrary
 
         void ClearImageCache();
         void DownloadFile(IWebClientWrapper client, string fileLocation, string url);
-        void GetSenpaiData();
-        void UpdateSenpaiData();
     }
 }

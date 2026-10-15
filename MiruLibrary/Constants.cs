@@ -11,8 +11,6 @@ namespace MiruLibrary
     {
         private static readonly string AppDataRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Miru");
 
-        public static string SenpaiFilePath { get; } = Path.Combine(AppDataRoot, "MiruCache", "senpai-data.json");
-
         public static string ImageCacheFolderPath { get; } = Path.Combine(AppDataRoot, "MiruCache");
         public static string SettingsPath { get; } = Path.Combine(AppDataRoot, "MiruCache", "config.json");
     }

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
+// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
 // Licensed under the GNU General Public License v3.0,
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
@@ -270,39 +270,6 @@ namespace Miru.Tests
             }
         }
 
-        [Theory]
-        [InlineData(ContentDialogResult.Primary, 1)]
-        [InlineData(ContentDialogResult.Secondary, 0)]
-        public void UpdateSenpaiData_ShouldUpdateOnlyOnPrimaryButton(ContentDialogResult clickedButton, int expectedTimesCalled)
-        {
-            using (var mock = AutoMock.GetLoose())
-            {
-                // Arrange
-                mock.Mock<ISimpleContentDialog>()
-                    .Setup(x => x.ShowAsync())
-                    .ReturnsAsync(clickedButton);
-                var cls = mock.Create<ShellViewModel>();
-
-                // Act
-                cls.UpdateSenpaiData().Wait();
-
-                // Assert
-                mock.Mock<ISimpleContentDialog>()
-                    .Verify(x => x.Config
-                    (
-                        "Update data from senpai.moe?",
-                        "Yes",
-                        "No",
-                        ContentDialogButton.Primary,
-                        null,
-                        ""
-                    ),
-                    Times.Once);
-                Assert.Equal(MiruAppStatus.Idle, cls.AppStatus);
-                mock.Mock<ISimpleContentDialog>().Verify(x => x.ShowAsync(), Times.Once);
-                mock.Mock<IFileSystemService>().Verify(x => x.UpdateSenpaiData(), Times.Exactly(expectedTimesCalled));
-            }
-        }
 
         [Theory]
         [InlineData(false, 0)]

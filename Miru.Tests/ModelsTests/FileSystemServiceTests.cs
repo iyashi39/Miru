@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
+// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
 // Licensed under the GNU General Public License v3.0,
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
@@ -91,107 +91,6 @@ namespace Miru.Tests.ModelsTests
 
                 // Assert
                 autoMock.Mock<IDirectoryInfo>().Verify(x => x.Create(), Times.Exactly(timesCreateIsCalled));
-            }
-        }
-
-        [Theory]
-        [InlineData(1, true)]
-        [InlineData(0, false)]
-        public void UpdateSenpaiData_GivenSenpaiDataPresent_DeleteCurrentData(int timesSenpaiDataDeleteCalled, bool senpaiDataPresent)
-        {
-            using (var autoMock = AutoMock.GetLoose())
-            {
-                // Arrange
-                autoMock.Mock<IDirectoryInfo>()
-                    .Setup(x => x.Exists)
-                    .Returns(true);
-
-                var fakeCacheDirectoryInfo = autoMock.Create<IDirectoryInfo>();
-
-                autoMock.Mock<IFileSystem>()
-                    .Setup(x => x.DirectoryInfo.FromDirectoryName(It.IsAny<string>()))
-                    .Returns(fakeCacheDirectoryInfo);
-
-                autoMock.Mock<IFileSystem>()
-                    .SetupSequence(x => x.File.Exists(It.IsAny<string>()))
-                    .Returns(true)
-                    .Returns(senpaiDataPresent)
-                    .Returns(true);
-
-                var sut = autoMock.Create<FileSystemService>();
-
-                // Act
-                sut.UpdateSenpaiData();
-
-                // Assert
-                autoMock.Mock<IFileSystem>().Verify(x => x.File.Delete(Constants.SenpaiFilePath), Times.Exactly(timesSenpaiDataDeleteCalled));
-            }
-        }
-
-        [Fact]
-        public void GetSenpaiData_GivenSenpaiDataPresent_DoNotGetNewSenpaiData()
-        {
-            using (var autoMock = AutoMock.GetLoose())
-            {
-                // Arrange
-                autoMock.Mock<IDirectoryInfo>()
-                    .Setup(x => x.Exists)
-                    .Returns(true);
-
-                var fakeCacheDirectoryInfo = autoMock.Create<IDirectoryInfo>();
-
-                autoMock.Mock<IFileSystem>()
-                    .Setup(x => x.DirectoryInfo.FromDirectoryName(It.IsAny<string>()))
-                    .Returns(fakeCacheDirectoryInfo);
-
-                autoMock.Mock<IFileSystem>()
-                    .Setup(x => x.File.Exists(It.IsAny<string>()))
-                    .Returns(true);
-
-                var sut = autoMock.Create<FileSystemService>();
-
-                // Act
-                sut.GetSenpaiData();
-
-                // Assert
-                autoMock.Mock<IFileSystem>().Verify(x => x.File.CreateText(Constants.SenpaiFilePath), Times.Never);
-            }
-        }
-
-        [Fact]
-        public void GetSenpaiData_GivenNoSenpaiData_GetNewSenpaiData()
-        {
-            using (var autoMock = AutoMock.GetLoose())
-            {
-                // Arrange
-                autoMock.Mock<IDirectoryInfo>()
-                    .Setup(x => x.Exists)
-                    .Returns(true);
-
-                var fakeCacheDirectoryInfo = autoMock.Create<IDirectoryInfo>();
-
-                autoMock.Mock<IFileSystem>()
-                    .Setup(x => x.DirectoryInfo.FromDirectoryName(It.IsAny<string>()))
-                    .Returns(fakeCacheDirectoryInfo);
-
-                autoMock.Mock<IFileSystem>()
-                    .Setup(x => x.File.CreateText(It.IsAny<string>()))
-                    .Returns(new StreamWriter(new MemoryStream()));
-
-                autoMock.Mock<IFileSystem>()
-                    .SetupSequence(x => x.File.Exists(It.IsAny<string>()))
-                    .Returns(true)
-                    .Returns(false);
-
-                autoMock.Mock<IWebService>().Setup(x => x.Client).Returns(new System.Net.Http.HttpClient());
-
-                var sut = autoMock.Create<FileSystemService>();
-
-                // Act
-                sut.GetSenpaiData();
-
-                // Assert
-                autoMock.Mock<IFileSystem>().Verify(x => x.File.CreateText(Constants.SenpaiFilePath), Times.Once);
             }
         }
 

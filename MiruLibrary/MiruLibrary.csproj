@@ -125,7 +125,7 @@
     <Compile Include="Models\Interfaces\ICurrentUserAnimeListModel.cs" />
     <Compile Include="Models\MiruAnimeModel.cs" />
     <Compile Include="Models\MiruAnimeModelProcessor.cs" />
-    <Compile Include="Models\SenpaiEntryModel.cs" />
+
     <Compile Include="Models\SyncedMyAnimeListUser.cs" />
     <Compile Include="Models\UserSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

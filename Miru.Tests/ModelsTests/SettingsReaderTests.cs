@@ -45,7 +45,7 @@ namespace Miru.Tests.ModelsTests
         }
 
         [Theory]
-        [InlineData(21.37, AnimeListType.Senpai, AnimeType.Both)]
+        [InlineData(21.37, AnimeListType.Season, AnimeType.Both)]
         [InlineData(13.37, AnimeListType.Watching, AnimeType.TV)]
         [InlineData(420.69, AnimeListType.Season, AnimeType.ONA)]
         public void Load_GivenConfigFilePresent_ReturnsUserSettings(double imageSize, AnimeListType listType, AnimeType animeType)
