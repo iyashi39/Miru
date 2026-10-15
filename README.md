@@ -25,7 +25,7 @@ You can click on the username hyperlink (`iyarashii777's` on the image above) to
 
 `Get Shows From The Current Season` button works like `Sync` button but it also gets all the animes from the current season even if the user is not watching them.  
 `List Type`, `Broadcast Type` and `Time Zone` drop-downs can be used to customize anime list display.  
-`Clear Cache` button clears data from database and local cache (local cache is located on the desktop in `MiruCache` folder).  
+`Clear Cache` button clears data from database and local cache (local cache is located in `%LOCALAPPDATA%\Miru\MiruCache` folder).  
 `Update Senpai Data` gets data from the senpai.moe site and stores it as JSON file in the local cache.  
 `Filter Titles` lets you filter animes by name. It takes effect immediately as you are typing, you can use <kbd>CTRL</kbd> + <kbd>F</kbd> shortcut to instantly focus this field and start typing.  
 You can set size of the images using `Art Size` field, size you select will be saved if you close the app and loaded on the next app launch.  

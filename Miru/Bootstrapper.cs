@@ -86,6 +86,7 @@ namespace Miru
             // without SQL Server / LocalDB installed
             var appDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Miru");
             Directory.CreateDirectory(appDataFolder);
+            Directory.CreateDirectory(Path.Combine(appDataFolder, "MiruCache"));
             AppDomain.CurrentDomain.SetData("DataDirectory", appDataFolder);
 
             // set starting view for this app
