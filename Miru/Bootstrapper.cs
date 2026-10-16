@@ -62,12 +62,7 @@ namespace Miru
                 .WithParameter(new TypedParameter(typeof(string), "http://localhost:9000/v3/"))
                 // prod API endpoint
 #else
-                .WithParameters(
-                new[]
-                {
-                    new NamedParameter("surpressException", false),
-                    new NamedParameter("useHttps", true)
-                })
+                .WithParameter(new TypedParameter(typeof(string), "http://localhost:9000/v3/"))
 #endif
                 .SingleInstance();
             builder.RegisterType<ToastNotifierWrapper>().As<IToastNotifierWrapper>();
