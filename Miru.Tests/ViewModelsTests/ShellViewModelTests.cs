@@ -280,6 +280,7 @@ namespace Miru.Tests
             {
                 // Arrange
                 var cls = mock.Create<ShellViewModel>();
+                cls.GetDroppedAnimeData = false;
 
                 mock.Mock<ICurrentUserAnimeListModel>()
                     .Setup(x => x.GetCurrentUserAnimeList(null))
@@ -315,6 +316,7 @@ namespace Miru.Tests
             using (var mock = AutoMock.GetLoose())
             {
                 var cls = mock.Create<ShellViewModel>();
+                cls.GetDroppedAnimeData = false;
                 string expectedAppStatusDescription = "2137";
                 (bool Success, string ErrorMessage) mockResult = (false, expectedAppStatusDescription);
                 mock.Mock<IMiruDbService>()
@@ -335,6 +337,7 @@ namespace Miru.Tests
             using (var mock = AutoMock.GetLoose())
             {
                 var cls = mock.Create<ShellViewModel>();
+                cls.GetDroppedAnimeData = false;
                 (bool Success, string ErrorMessage) mockResult = (true, null);
                 mock.Mock<IMiruDbService>()
                     .Setup(x => x.CurrentUserAnimeList.GetCurrentUserAnimeList(It.IsAny<string>()))
@@ -357,6 +360,7 @@ namespace Miru.Tests
             using (var mock = AutoMock.GetLoose())
             {
                 var cls = mock.Create<ShellViewModel>();
+                cls.GetDroppedAnimeData = false;
                 (bool Success, string ErrorMessage) mockResult = (true, null);
                 mock.Mock<IMiruDbService>()
                     .Setup(x => x.CurrentUserAnimeList.GetCurrentUserAnimeList(It.IsAny<string>()))

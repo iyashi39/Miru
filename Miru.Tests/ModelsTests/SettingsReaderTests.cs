@@ -55,7 +55,7 @@ namespace Miru.Tests.ModelsTests
                 // Arrange
                 string testJson = $@"
                                 {{
-                                  ""animeImageSize"": {imageSize},
+                                  ""animeImageSize"": {imageSize.ToString(System.Globalization.CultureInfo.InvariantCulture)},
                                   ""displayedAnimeListType"": {(int)listType},
                                   ""displayedAnimeType"": {(int)animeType}
                                 }}";

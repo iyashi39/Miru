@@ -110,10 +110,13 @@ namespace MiruDatabaseLogicLayer
             using (var db = CreateMiruDbContext.Invoke())
             {
                 // Force database creation if it doesn't exist
-                db.Database.CreateIfNotExists();
+                if (db.Database != null)
+                {
+                    db.Database.CreateIfNotExists();
+                }
 
                 // if SyncedMyAnimeListUsers table is not empty
-                if (db.SyncedMyAnimeListUsers.Any())
+                if (db.SyncedMyAnimeListUsers != null && db.SyncedMyAnimeListUsers.Any())
                 {
                     // load the sync time of the last synchronization
                     SyncDateData = db.SyncedMyAnimeListUsers.FirstOrDefault().SyncTime;
@@ -123,7 +126,9 @@ namespace MiruDatabaseLogicLayer
                 }
 
                 // Cache all anime models
-                _cachedAnimeList = db.MiruAnimeModels.ToList();
+                _cachedAnimeList = db.MiruAnimeModels == null
+                    ? new List<MiruAnimeModel>()
+                    : db.MiruAnimeModels.ToList();
             }
         }
 
@@ -150,7 +155,7 @@ namespace MiruDatabaseLogicLayer
             {
                 using (var db = CreateMiruDbContext.Invoke())
                 {
-                    _cachedAnimeList = db.MiruAnimeModels.ToList();
+                    _cachedAnimeList = db.MiruAnimeModels == null ? new List<MiruAnimeModel>() : db.MiruAnimeModels.ToList();
                 }
             }
             var userAnimeList = GetFilteredUserAnimeList(selectedAnimeBroadcastType, animeTitleToFilterBy, selectedTimeZone, ageRating);
@@ -163,6 +168,14 @@ namespace MiruDatabaseLogicLayer
                                                              TimeZoneInfo selectedTimeZone,
                                                              AgeRating ageRating)
         {
+            if (_cachedAnimeList == null)
+            {
+                using (var db = CreateMiruDbContext.Invoke())
+                {
+                    _cachedAnimeList = db.MiruAnimeModels == null ? new List<MiruAnimeModel>() : db.MiruAnimeModels.ToList();
+                }
+            }
+
             if (_cachedAnimeList == null || _cachedAnimeList.Count == 0)
                 return new List<MiruAnimeModel>();
 

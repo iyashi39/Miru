@@ -114,7 +114,6 @@ namespace Miru.Tests.ModelsTests
 
                 autoMock.Mock<IFileSystem>()
                     .SetupSequence(x => x.File.Exists(It.IsAny<string>()))
-                    .Returns(true)
                     .Returns(filePresent);
 
                 var sut = autoMock.Create<FileSystemService>();
