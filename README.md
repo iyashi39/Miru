@@ -41,10 +41,18 @@ You can get a list of all animes in the current season by clicking `Get Shows Fr
 ![Image of the current season](https://user-images.githubusercontent.com/38395954/180602427-26ec53d7-9a3d-4b0a-88b8-e1b49e577135.png)
 
 # Building
-Build the solution with Visual Studio 2022.
+Miru is a Windows-only WPF application targeting `net10.0-windows10.0.18362`. Install the .NET 10 SDK and the .NET desktop development workload for Visual Studio, then build or run the app from the repository root:
+
+```powershell
+dotnet build Miru\Miru.csproj
+dotnet run --project Miru\Miru.csproj
+```
+
+You can also open `Miru.sln` in Visual Studio 2026 and build the `Miru` project.
 
 ## Database
-The app uses a local SQLite database file (`MiruDatabase.sqlite`) stored in `%LOCALAPPDATA%\Miru\`. No SQL Server / LocalDB installation is required — the database is created automatically on first run. Existing LocalDB databases are not migrated, so synced data has to be downloaded again after switching to SQLite.
+The app targets .NET 10 and uses Entity Framework 6 with SQLite (`System.Data.SQLite`) for local storage. The database file (`MiruDatabase.sqlite`) is stored in `%LOCALAPPDATA%\Miru\` and its required tables are initialized automatically on first run. No SQL Server or LocalDB installation is required. Existing LocalDB databases are not migrated, so synced data has to be downloaded again after switching to SQLite.
+
 # Changelog
 For older changes go to the releases page and browse older releases.
 ### Miru 2.4
