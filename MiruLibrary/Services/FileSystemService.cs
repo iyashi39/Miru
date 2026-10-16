@@ -24,8 +24,6 @@ namespace MiruLibrary
             {
                 ImageCacheFolder.Create();
             }
-            // if there is no local senpai data file get the JSON from senpai.moe
-            GetSenpaiData();
         }
         public IFileSystem FileSystem { get; }
         public IDirectoryInfo ImageCacheFolder { get; }
@@ -37,34 +35,6 @@ namespace MiruLibrary
             foreach (IFileInfo file in ImageCacheFolder.EnumerateFiles())
             {
                 file.Delete();
-            }
-        }
-
-        // updates senpai.json data file which is used as a backup for anime airing time
-        public void UpdateSenpaiData()
-        {
-            if (FileSystem.File.Exists(Constants.SenpaiFilePath))
-            {
-                FileSystem.File.Delete(Constants.SenpaiFilePath);
-            }
-            GetSenpaiData();
-        }
-
-        // gets the data from senpai.moe in a JSON form
-        public async void GetSenpaiData()
-        {
-            if (FileSystem.File.Exists(Constants.SenpaiFilePath))
-            {
-                return;
-            }
-
-            // serialize JSON directly to a file
-            using (StreamWriter file = FileSystem.File.CreateText(Constants.SenpaiFilePath))
-            {
-                var senpaiData = await WebService.Client.GetStringAsync(UserSettings.Value.SenpaiDataSourceUrl);
-                // get only MALID and airing_date json properties
-                var deserializedSenpaiData = JsonConvert.DeserializeObject<SenpaiEntryModel>(senpaiData);
-                file.Write(JsonConvert.SerializeObject(deserializedSenpaiData, Formatting.Indented));
             }
         }
 

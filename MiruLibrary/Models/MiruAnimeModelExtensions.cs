@@ -129,23 +129,12 @@ namespace MiruLibrary.Models
             var jpCultureInfo = CultureInfo.GetCultureInfo("ja-JP");
             string[] formats = { "dd/MM/yyyy HH:mm", "d/MM/yyyy HH:mm", "dd/M/yyyy HH:mm", "d/M/yyyy HH:mm"};
 
-            // deserialize data from senpai as a backup source of anime broadcast time
-            var senpaiEntries = JsonConvert.DeserializeObject<SenpaiEntryModel>(fileSystemService.FileSystem.File.ReadAllText(Constants.SenpaiFilePath));
-            var senpaiIDs = senpaiEntries.Items.Select(x => x.MalId).ToArray();
-
             // for each anime parse time and day of the week from the broadcast string
             foreach (var anime in detailedAnimeList)
             {
-                anime.IsOnSenpai = senpaiIDs.Contains(anime.MalId);
-                bool parsed = false;
+                bool parsed = TryParseAndSetAirTime(anime.Broadcast, anime, formats, jpCultureInfo);
 
-                if (anime.IsOnSenpai)
-                {
-                    var airDateAndTime = senpaiEntries.Items.First(x => x.MalId == anime.MalId).Airdate;
-                    parsed = TryParseAndSetAirTime(airDateAndTime, anime, formats, jpCultureInfo);
-                }
-
-                if (!parsed && !TryParseAndSetAirTime(anime.Broadcast, anime, formats, jpCultureInfo))
+                if (!parsed)
                 {
                     anime.TryParseAndSetAirTimeFromMyAnimeList();
                 }
@@ -157,11 +146,11 @@ namespace MiruLibrary.Models
 
         public static bool TryParseAndSetAirTime(string airTimeText, MiruAnimeModel animeToUpdate, string[] formats, CultureInfo cultureInfo)
         {
-            var parsed = DateTime.TryParseExact(airTimeText, formats, cultureInfo, DateTimeStyles.None, out DateTime parsedSenpaiBroadcast);
+            var parsed = DateTime.TryParseExact(airTimeText, formats, cultureInfo, DateTimeStyles.None, out DateTime parsedBroadcastTime);
             if (parsed)
             {
                 animeToUpdate.Broadcast = airTimeText;
-                animeToUpdate.JSTBroadcastTime = parsedSenpaiBroadcast;
+                animeToUpdate.JSTBroadcastTime = parsedBroadcastTime;
             }
             return parsed;
         }

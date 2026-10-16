@@ -1,34 +1,47 @@
-﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
+﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39
 // Licensed under the GNU General Public License v3.0,
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
 using Autofac;
-using Caliburn.Micro.Autofac;
+using Caliburn.Micro;
 using MiruDatabaseLogicLayer;
 using MiruLibrary.Models;
 using Miru.ViewModels;
 using System.Windows;
 using JikanDotNet;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using MiruLibrary.Settings;
 using MiruLibrary;
 using System.IO.Abstractions;
 using MyInternetConnectionLibrary;
 using MiruLibrary.Services;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.EntityFrameworkCore;
 
 namespace Miru
 {
     [ExcludeFromCodeCoverage]
-    public class Bootstrapper : AutofacBootstrapper<IShellViewModel>
+    public class Bootstrapper : BootstrapperBase
     {
+        private IContainer Container { get; set; }
+
         public Bootstrapper()
         {
             Initialize();
         }
 
-        protected override void ConfigureContainer(ContainerBuilder builder)
+        protected override void Configure()
         {
+            var builder = new ContainerBuilder();
+            ConfigureContainer(builder);
+            Container = builder.Build();
+        }
+
+        protected void ConfigureContainer(ContainerBuilder builder)
+        {
+            builder.RegisterType<WindowManager>().As<IWindowManager>().SingleInstance();
             builder.RegisterType<SortedAnimeListsViewModel>().As<ISortedAnimeListsViewModel>();
             builder.RegisterType<ShellViewModel>()
                 .As<IShellViewModel>()
@@ -59,7 +72,15 @@ namespace Miru
                 .SingleInstance();
             builder.RegisterType<ToastNotifierWrapper>().As<IToastNotifierWrapper>();
             builder.RegisterType<MiruAnimeModelProcessor>().As<IMiruAnimeModelProcessor>();
-            builder.RegisterType<MiruDbContext>().As<IMiruDbContext>();
+            var databasePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Miru",
+                "MiruDatabase.sqlite");
+            builder.Register(_ => new MiruDbContext(
+                new DbContextOptionsBuilder<MiruDbContext>()
+                    .UseSqlite($"Data Source={databasePath}")
+                    .Options))
+                .As<IMiruDbContext>();
             builder.RegisterType<FileSystem>().As<IFileSystem>();
             builder.RegisterType<FileSystemService>().As<IFileSystemService>();
             builder.RegisterType<SyncedMyAnimeListUser>().As<ISyncedMyAnimeListUser>();
@@ -73,20 +94,31 @@ namespace Miru
             builder.RegisterModule(new SettingsModule());
         }
 
-        protected override void ConfigureBootstrapper()
+        protected override object GetInstance(Type service, string key)
         {
-            base.ConfigureBootstrapper();
-            EnforceNamespaceConvention = false;
+            return key == null ? Container.Resolve(service) : Container.ResolveKeyed(key, service);
+        }
+
+        protected override IEnumerable<object> GetAllInstances(Type service)
+        {
+            var listOfServiceType = typeof(IList<>).MakeGenericType(service);
+            return (IEnumerable<object>)Container.Resolve(listOfServiceType);
+        }
+
+        protected override void BuildUp(object instance)
+        {
+            Container.InjectProperties(instance);
         }
 
         protected override async void OnStartup(object sender, StartupEventArgs e)
         {
+            // store the local sqlite database in %LOCALAPPDATA%\Miru so the app works
+            // without SQL Server / LocalDB installed
+            var appDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Miru");
+            Directory.CreateDirectory(appDataFolder);
+            Directory.CreateDirectory(Path.Combine(appDataFolder, "MiruCache"));
             // set starting view for this app
-            DisplayRootViewFor<IShellViewModel>();
-
-            var sqLocalDbPresent = Container.Resolve<ShellViewModel>().CheckSqlLocalDbInstallationPresence();
-            if (!sqLocalDbPresent)
-                await Container.Resolve<ShellViewModel>().OpenNoLocalDbInfoDialog();
+            await DisplayRootViewForAsync<IShellViewModel>();
         }
 
         protected override void OnExit(object sender, EventArgs e)

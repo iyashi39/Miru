@@ -23,6 +23,15 @@ namespace MiruLibrary.Services
         }
 
         [ExcludeFromCodeCoverage]
+        public Process OpenUrl(string url)
+        {
+            return Process.Start(new ProcessStartInfo(url)
+            {
+                UseShellExecute = true
+            });
+        }
+
+        [ExcludeFromCodeCoverage]
         public void ExitEnvironment(int exitCode)
         {
             Environment.Exit(exitCode);

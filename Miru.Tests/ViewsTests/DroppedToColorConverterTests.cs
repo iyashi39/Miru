@@ -22,7 +22,6 @@ namespace Miru.Tests.ViewsTests
         }
 
         [Theory]
-        [InlineData(AnimeListType.Senpai)]
         [InlineData(AnimeListType.Season)]
         public void Convert_DroppedTrueAndSeasonListType_ReturnRedColor(AnimeListType animeListType)
         {
@@ -35,7 +34,6 @@ namespace Miru.Tests.ViewsTests
         }
 
         [Theory]
-        [InlineData(AnimeListType.Senpai)]
         [InlineData(AnimeListType.Season)]
         public void Convert_WatchingTrueAndSeasonListType_ReturnGreenColor(AnimeListType animeListType)
         {
@@ -48,7 +46,6 @@ namespace Miru.Tests.ViewsTests
         }
 
         [Theory]
-        [InlineData(AnimeListType.Senpai)]
         [InlineData(AnimeListType.Season)]
         [InlineData(AnimeListType.AiringAndWatching)]
         [InlineData(AnimeListType.Watching)]

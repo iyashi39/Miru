@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
+// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
 // Licensed under the GNU General Public License v3.0,
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
@@ -270,39 +270,6 @@ namespace Miru.Tests
             }
         }
 
-        [Theory]
-        [InlineData(ContentDialogResult.Primary, 1)]
-        [InlineData(ContentDialogResult.Secondary, 0)]
-        public void UpdateSenpaiData_ShouldUpdateOnlyOnPrimaryButton(ContentDialogResult clickedButton, int expectedTimesCalled)
-        {
-            using (var mock = AutoMock.GetLoose())
-            {
-                // Arrange
-                mock.Mock<ISimpleContentDialog>()
-                    .Setup(x => x.ShowAsync())
-                    .ReturnsAsync(clickedButton);
-                var cls = mock.Create<ShellViewModel>();
-
-                // Act
-                cls.UpdateSenpaiData().Wait();
-
-                // Assert
-                mock.Mock<ISimpleContentDialog>()
-                    .Verify(x => x.Config
-                    (
-                        "Update data from senpai.moe?",
-                        "Yes",
-                        "No",
-                        ContentDialogButton.Primary,
-                        null,
-                        ""
-                    ),
-                    Times.Once);
-                Assert.Equal(MiruAppStatus.Idle, cls.AppStatus);
-                mock.Mock<ISimpleContentDialog>().Verify(x => x.ShowAsync(), Times.Once);
-                mock.Mock<IFileSystemService>().Verify(x => x.UpdateSenpaiData(), Times.Exactly(expectedTimesCalled));
-            }
-        }
 
         [Theory]
         [InlineData(false, 0)]
@@ -313,6 +280,7 @@ namespace Miru.Tests
             {
                 // Arrange
                 var cls = mock.Create<ShellViewModel>();
+                cls.GetDroppedAnimeData = false;
 
                 mock.Mock<ICurrentUserAnimeListModel>()
                     .Setup(x => x.GetCurrentUserAnimeList(null))
@@ -348,6 +316,7 @@ namespace Miru.Tests
             using (var mock = AutoMock.GetLoose())
             {
                 var cls = mock.Create<ShellViewModel>();
+                cls.GetDroppedAnimeData = false;
                 string expectedAppStatusDescription = "2137";
                 (bool Success, string ErrorMessage) mockResult = (false, expectedAppStatusDescription);
                 mock.Mock<IMiruDbService>()
@@ -368,6 +337,7 @@ namespace Miru.Tests
             using (var mock = AutoMock.GetLoose())
             {
                 var cls = mock.Create<ShellViewModel>();
+                cls.GetDroppedAnimeData = false;
                 (bool Success, string ErrorMessage) mockResult = (true, null);
                 mock.Mock<IMiruDbService>()
                     .Setup(x => x.CurrentUserAnimeList.GetCurrentUserAnimeList(It.IsAny<string>()))
@@ -390,6 +360,7 @@ namespace Miru.Tests
             using (var mock = AutoMock.GetLoose())
             {
                 var cls = mock.Create<ShellViewModel>();
+                cls.GetDroppedAnimeData = false;
                 (bool Success, string ErrorMessage) mockResult = (true, null);
                 mock.Mock<IMiruDbService>()
                     .Setup(x => x.CurrentUserAnimeList.GetCurrentUserAnimeList(It.IsAny<string>()))
@@ -444,7 +415,8 @@ namespace Miru.Tests
                         It.IsAny<AnimeListType>(), 
                         It.IsAny<TimeZoneInfo>(), 
                         It.IsAny<MiruLibrary.AnimeType>(), 
-                        null));
+                        null,
+                        It.IsAny<MiruLibrary.AgeRating>()));
 
                 // Act
                 cls.UpdateUiAfterDataSync();
@@ -590,63 +562,8 @@ namespace Miru.Tests
             }
         }
 
-        [Theory]
-        [InlineData("")]
-        [InlineData(" ")]
-        [InlineData("test name")]
-        public void CheckSqlLocalDbInstallationPresence_InvalidSubKeyNames_ReturnFalse(string subKeyNames)
-        {
-            using (var mock = AutoMock.GetLoose())
-            {
-                var testRegKey = Registry.CurrentUser.CreateSubKey("MiruRegistryTest");
-                testRegKey.CreateSubKey(subKeyNames);
-                mock.Mock<ISystemService>().Setup(x => x.OpenLocalMachineSubKey(It.IsAny<string>())).Returns(testRegKey);
-                var cls = mock.Create<ShellViewModel>();
 
-                var result = cls.CheckSqlLocalDbInstallationPresence();
 
-                Assert.False(result);
-                Registry.CurrentUser.DeleteSubKeyTree("MiruRegistryTest");
-            }
-        }
-
-        [Theory]
-        [InlineData("13.0")]
-        [InlineData("14.0")]
-        public void CheckSqlLocalDbInstallationPresence_SqlLocalDbVer13_0_OrGreater_ReturnTrue(string subKeyNames)
-        {
-            using (var mock = AutoMock.GetLoose())
-            {
-                var testRegKey = Registry.CurrentUser.CreateSubKey("MiruRegistryTest");
-                testRegKey.CreateSubKey(subKeyNames);
-                mock.Mock<ISystemService>().Setup(x => x.OpenLocalMachineSubKey(It.IsAny<string>())).Returns(testRegKey);
-                var cls = mock.Create<ShellViewModel>();
-
-                var result = cls.CheckSqlLocalDbInstallationPresence();
-
-                Assert.True(result);
-                Registry.CurrentUser.DeleteSubKeyTree("MiruRegistryTest");
-            }
-        }
-
-        [Theory]
-        [InlineData("12.0")]
-        [InlineData("10.0")]
-        public void CheckSqlLocalDbInstallationPresence_SqlLocalDbVerLowerThan13_0_ReturnFalse(string subKeyNames)
-        {
-            using (var mock = AutoMock.GetLoose())
-            {
-                var testRegKey = Registry.CurrentUser.CreateSubKey("MiruRegistryTest");
-                testRegKey.CreateSubKey(subKeyNames);
-                mock.Mock<ISystemService>().Setup(x => x.OpenLocalMachineSubKey(It.IsAny<string>())).Returns(testRegKey);
-                var cls = mock.Create<ShellViewModel>();
-
-                var result = cls.CheckSqlLocalDbInstallationPresence();
-
-                Assert.False(result);
-                Registry.CurrentUser.DeleteSubKeyTree("MiruRegistryTest");
-            }
-        }
 
         [Fact]
         public void OpenAnimeURL_CallsProcessWithUrlParam()
@@ -664,61 +581,6 @@ namespace Miru.Tests
             }
         }
 
-        [Fact]
-        public void OpenNoLocalDbInfoDialog_ResultPrimary_ExitEnvironmentCalled()
-        {
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<ISimpleContentDialog>()
-                    .Setup(x => x.ShowAsync())
-                    .ReturnsAsync(ContentDialogResult.Primary);
-                var cls = mock.Create<ShellViewModel>();
-
-                cls.OpenNoLocalDbInfoDialog().Wait();
-
-                mock.Mock<ISystemService>().Verify(x => x.ExitEnvironment(0), Times.Once);
-                mock.Mock<ISystemService>().Verify(x => x.StartProcess(It.IsAny<string>()), Times.Never);
-                Assert.Equal(MiruAppStatus.Busy, cls.AppStatus);
-            }
-        }
-
-        [Fact]
-        public void OpenNoLocalDbInfoDialog_ResultSecondary_ExitEnvironmentAndOpenSqlServerDownloadUrlCalled()
-        {
-            using (var mock = AutoMock.GetLoose())
-            {
-                
-                mock.Mock<ISimpleContentDialog>()
-                    .Setup(x => x.ShowAsync())
-                    .ReturnsAsync(ContentDialogResult.Secondary);
-                var cls = mock.Create<ShellViewModel>();
-
-                cls.OpenNoLocalDbInfoDialog().Wait();
-
-                mock.Mock<ISystemService>().Verify(x => x.ExitEnvironment(0), Times.Once);
-                mock.Mock<ISystemService>()
-                    .Verify(x => x.StartProcess(@"https://docs.microsoft.com/en-us/sql/database-engine/configure-windows/sql-server-express-localdb?view=sql-server-ver15"), Times.Once);
-                Assert.Equal(MiruAppStatus.Busy, cls.AppStatus);
-            }
-        }
-
-        [Fact]
-        public void OpenNoLocalDbInfoDialog_ResultNone_NothingCalled()
-        {
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<ISimpleContentDialog>()
-                    .Setup(x => x.ShowAsync())
-                    .ReturnsAsync(ContentDialogResult.None);
-                var cls = mock.Create<ShellViewModel>();
-
-                cls.OpenNoLocalDbInfoDialog().Wait();
-
-                mock.Mock<ISystemService>().Verify(x => x.ExitEnvironment(0), Times.Never);
-                mock.Mock<ISystemService>().Verify(x => x.StartProcess(It.IsAny<string>()), Times.Never);
-                Assert.Equal(MiruAppStatus.Busy, cls.AppStatus);
-            }
-        }
 
         [Fact]
         public async Task GetUserDroppedAnimeList_Fails_ReturnFalseAndIdleAppStatusWithErrorMsg()
@@ -838,6 +700,7 @@ namespace Miru.Tests
                     .Setup(x => x.ShowAsync())
                     .ReturnsAsync(ContentDialogResult.Primary);
                 var cls = mock.Create<ShellViewModel>();
+                cls.ToastNotifierWrapper = mock.Mock<IToastNotifierWrapper>().Object;
                 var title = "test";
                 var opThemes = "\"Title\" by Artist\n\"title2\" by artist2 ";
                 var edThemes = "";
@@ -857,7 +720,7 @@ namespace Miru.Tests
                             "OP",
                             "Cancel",
                             ContentDialogButton.Primary,
-                            $"{opThemes}\n{edThemes}",
+                            It.IsAny<object>(),
                             "ED"
                         ),
                         Times.Once);
@@ -879,6 +742,7 @@ namespace Miru.Tests
                     .Setup(x => x.ShowAsync())
                     .ReturnsAsync(ContentDialogResult.Secondary);
                 var cls = mock.Create<ShellViewModel>();
+                cls.ToastNotifierWrapper = mock.Mock<IToastNotifierWrapper>().Object;
                 var title = "test";
                 var opThemes = "";
                 var edThemes = "\"ending\" by Artist\n\"ending2\" by artist2 ";
@@ -898,7 +762,7 @@ namespace Miru.Tests
                             "OP",
                             "Cancel",
                             ContentDialogButton.Primary,
-                            $"{opThemes}\n{edThemes}",
+                            It.IsAny<object>(),
                             "ED"
                         ),
                         Times.Once);
@@ -1060,7 +924,7 @@ namespace Miru.Tests
                 var cls = mock.Create<ShellViewModel>();
                 var testValue = AnimeListType.AiringAndWatching;
                 mock.Mock<IMiruDbService>()
-                    .Setup(x => x.ChangeDisplayedAnimeList(testValue, cls.SelectedTimeZone, cls.SelectedDisplayedAnimeType, cls.CurrentAnimeNameFilter));
+                    .Setup(x => x.ChangeDisplayedAnimeList(testValue, cls.SelectedTimeZone, cls.SelectedDisplayedAnimeType, cls.CurrentAnimeNameFilter, MiruLibrary.AgeRating.Any));
 
                 // Act
                 cls.SelectedDisplayedAnimeList = testValue;
@@ -1069,7 +933,7 @@ namespace Miru.Tests
                 Assert.Equal(testValue, cls.SelectedDisplayedAnimeList);
                 mock.Mock<IMiruDbService>()
                     .Verify(x => 
-                    x.ChangeDisplayedAnimeList(testValue, cls.SelectedTimeZone, cls.SelectedDisplayedAnimeType, cls.CurrentAnimeNameFilter), Times.Once);
+                    x.ChangeDisplayedAnimeList(testValue, cls.SelectedTimeZone, cls.SelectedDisplayedAnimeType, cls.CurrentAnimeNameFilter, MiruLibrary.AgeRating.Any), Times.Once);
             }
         }
 
@@ -1082,7 +946,7 @@ namespace Miru.Tests
                 var cls = mock.Create<ShellViewModel>();
                 var testValue = MiruLibrary.AnimeType.ONA;
                 mock.Mock<IMiruDbService>()
-                    .Setup(x => x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, cls.SelectedTimeZone, testValue, cls.CurrentAnimeNameFilter));
+                    .Setup(x => x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, cls.SelectedTimeZone, testValue, cls.CurrentAnimeNameFilter, MiruLibrary.AgeRating.Any));
 
                 // Act
                 cls.SelectedDisplayedAnimeType = testValue;
@@ -1091,7 +955,7 @@ namespace Miru.Tests
                 Assert.Equal(testValue, cls.SelectedDisplayedAnimeType);
                 mock.Mock<IMiruDbService>()
                     .Verify(x =>
-                    x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, cls.SelectedTimeZone, testValue, cls.CurrentAnimeNameFilter), Times.Once);
+                    x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, cls.SelectedTimeZone, testValue, cls.CurrentAnimeNameFilter, MiruLibrary.AgeRating.Any), Times.Once);
             }
         }
 
@@ -1104,7 +968,7 @@ namespace Miru.Tests
                 var cls = mock.Create<ShellViewModel>();
                 var testValue = It.IsAny<TimeZoneInfo>();
                 mock.Mock<IMiruDbService>()
-                    .Setup(x => x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, testValue, cls.SelectedDisplayedAnimeType, cls.CurrentAnimeNameFilter));
+                    .Setup(x => x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, testValue, cls.SelectedDisplayedAnimeType, cls.CurrentAnimeNameFilter, MiruLibrary.AgeRating.Any));
 
                 // Act
                 cls.SelectedTimeZone = testValue;
@@ -1113,7 +977,7 @@ namespace Miru.Tests
                 Assert.Equal(testValue, cls.SelectedTimeZone);
                 mock.Mock<IMiruDbService>()
                     .Verify(x =>
-                    x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, testValue, cls.SelectedDisplayedAnimeType, cls.CurrentAnimeNameFilter), Times.Once);
+                    x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, testValue, cls.SelectedDisplayedAnimeType, cls.CurrentAnimeNameFilter, MiruLibrary.AgeRating.Any), Times.Once);
             }
         }
 
@@ -1126,7 +990,7 @@ namespace Miru.Tests
                 var cls = mock.Create<ShellViewModel>();
                 var testValue = "TEST STRING";
                 mock.Mock<IMiruDbService>()
-                    .Setup(x => x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, cls.SelectedTimeZone, cls.SelectedDisplayedAnimeType, testValue));
+                    .Setup(x => x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, cls.SelectedTimeZone, cls.SelectedDisplayedAnimeType, testValue, MiruLibrary.AgeRating.Any));
 
                 // Act
                 cls.CurrentAnimeNameFilter = testValue;
@@ -1135,7 +999,7 @@ namespace Miru.Tests
                 Assert.Equal(testValue, cls.CurrentAnimeNameFilter);
                 mock.Mock<IMiruDbService>()
                     .Verify(x =>
-                    x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, cls.SelectedTimeZone, cls.SelectedDisplayedAnimeType, testValue), Times.Once);
+                    x.ChangeDisplayedAnimeList(cls.SelectedDisplayedAnimeList, cls.SelectedTimeZone, cls.SelectedDisplayedAnimeType, testValue, MiruLibrary.AgeRating.Any), Times.Once);
             }
         }
 

@@ -4,7 +4,7 @@
 
 using MiruLibrary.Models;
 using System;
-using System.Data.Entity;
+using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 
 namespace MiruDatabaseLogicLayer
@@ -13,8 +13,8 @@ namespace MiruDatabaseLogicLayer
     {
         DbSet<MiruAnimeModel> MiruAnimeModels { get; set; }
         DbSet<SyncedMyAnimeListUser> SyncedMyAnimeListUsers { get; set; }
-        Database Database { get; }
+        bool EnsureCreated();
         Task<int> SaveChangesAsync();
-        int ExecuteSqlCommand(string sql, params object[] parameters);
+        int ExecuteSqlRaw(string sql, params object[] parameters);
     }
 }

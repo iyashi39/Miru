@@ -60,7 +60,9 @@ namespace Miru.Tests.ModelsTests
         [Fact]
         public void LocalImageSource_GivenValidLocalImagePath_ReturnsBitmapImage()
         {
-            string testFilePath = Path.Combine(Constants.ImageCacheFolderPath, "test.jpg");
+            string imageCacheFolder = Constants.ImageCacheFolderPath;
+            Directory.CreateDirectory(imageCacheFolder);
+            string testFilePath = Path.Combine(imageCacheFolder, "test.jpg");
             if (!File.Exists(testFilePath))
             {
                 var testImage = new Bitmap(1, 1);

@@ -6,7 +6,7 @@ Miru is a WPF app used to display data from the [jikan](https://github.com/Ervie
 Idea for the app is based on [senpai](http://www.senpai.moe/) a great site that shows airing anime in a neat way.  
 It lets you display airing animes from the user's MAL watching list. Also it can display list of TV animes from the current season.
 This app displays airing animes for each day of the week in the specified timezone.  
-It uses EF6 and SQL Server's LocalDB to store the data.
+It uses EF6 and SQLite to store the data.
 
 SonarQube quality gate:
 ![SonarQube result](https://github.com/iyarashii/Miru/assets/38395954/22de7f95-d45e-4656-af96-f7d2c75e4801)
@@ -25,7 +25,7 @@ You can click on the username hyperlink (`iyarashii777's` on the image above) to
 
 `Get Shows From The Current Season` button works like `Sync` button but it also gets all the animes from the current season even if the user is not watching them.  
 `List Type`, `Broadcast Type` and `Time Zone` drop-downs can be used to customize anime list display.  
-`Clear Cache` button clears data from database and local cache (local cache is located on the desktop in `MiruCache` folder).  
+`Clear Cache` button clears data from database and local cache (local cache is located in `%LOCALAPPDATA%\Miru\MiruCache` folder).  
 `Update Senpai Data` gets data from the senpai.moe site and stores it as JSON file in the local cache.  
 `Filter Titles` lets you filter animes by name. It takes effect immediately as you are typing, you can use <kbd>CTRL</kbd> + <kbd>F</kbd> shortcut to instantly focus this field and start typing.  
 You can set size of the images using `Art Size` field, size you select will be saved if you close the app and loaded on the next app launch.  
@@ -41,28 +41,18 @@ You can get a list of all animes in the current season by clicking `Get Shows Fr
 ![Image of the current season](https://user-images.githubusercontent.com/38395954/180602427-26ec53d7-9a3d-4b0a-88b8-e1b49e577135.png)
 
 # Building
-Build the solution with Visual Studio 2022.
-# Installation guide for SQL Server LocalDB
-### Follow these steps to install on Windows 10:
+Miru is a Windows-only WPF application targeting `net10.0-windows10.0.18362`. Install the .NET 10 SDK and the .NET desktop development workload for Visual Studio, then build or run the app from the repository root:
 
-1.  **Check if you have LocalDB installed on your PC:**
-    1. Open Control Panel.
-    2. Click Programs > Uninstall a program.
-    3. Search for `localdb`.
-    4. If you see `SQL Server 2016 LocalDB` or newer go to step 3 otherwise go to step 2. 
-    ![Image of SQL Server 2016 LocalDB in control panel](https://i.imgur.com/3WApAAy.png)
+```powershell
+dotnet build Miru\Miru.csproj
+dotnet run --project Miru\Miru.csproj
+```
 
-2.  **Download and install LocalDB:**
-    1. Download the LocalDB from [here](https://www.microsoft.com/en-us/download/confirmation.aspx?id=56840).
-    2. Run the downloaded `SQLServer2016-SSEI-Expr.exe`.
-    3. Select `Download Media`.
-    ![Step 1 of installation](https://i.imgur.com/So90kQ2.png)
-    4. Select preferred language and download location, select `LocalDB` as a package.
-    ![Step 2 of installation](https://i.imgur.com/ryTqeU9.png)
-    5. Click `Download` and wait for the download to complete.
-    6. Run downloaded `SqlLocalDB.msi` installer.
+You can also open `Miru.sln` in Visual Studio 2026 and build the `Miru` project.
 
-3.  **Run the app using Miru.exe.**
+## Database
+The app targets .NET 10 and uses Entity Framework Core 10 with SQLite (`Microsoft.Data.Sqlite`) for local storage. The database file (`MiruDatabase.sqlite`) is stored in `%LOCALAPPDATA%\Miru\`; EF Core creates its tables automatically on first run. Existing SQLite files are reused without changing their schema; schema changes will require an explicit EF Core migration. Existing LocalDB databases are not migrated, so synced data has to be downloaded again after switching to SQLite. No SQL Server or LocalDB installation is required.
+
 # Changelog
 For older changes go to the releases page and browse older releases.
 ### Miru 2.4

@@ -10,7 +10,6 @@ using MyInternetConnectionLibrary;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 using AnimeType = MiruLibrary.AnimeType;
@@ -103,19 +102,12 @@ namespace MiruDatabaseLogicLayer
         // load data from the last sync
         public void LoadLastSyncedData()
         {
-            Database.SetInitializer(new MigrateDatabaseToLatestVersion<MiruDbContext, Migrations.Configuration>());
-
-            // create the database if it doesn't exist
-            Database.SetInitializer(new CreateDatabaseIfNotExists<MiruDbContext>());
-
-            // open temporary connection to the database
             using (var db = CreateMiruDbContext.Invoke())
             {
-                // Force database creation if it doesn't exist
-                db.Database.CreateIfNotExists();
+                db.EnsureCreated();
 
                 // if SyncedMyAnimeListUsers table is not empty
-                if (db.SyncedMyAnimeListUsers.Any())
+                if (db.SyncedMyAnimeListUsers != null && db.SyncedMyAnimeListUsers.Any())
                 {
                     // load the sync time of the last synchronization
                     SyncDateData = db.SyncedMyAnimeListUsers.FirstOrDefault().SyncTime;
@@ -125,18 +117,19 @@ namespace MiruDatabaseLogicLayer
                 }
 
                 // Cache all anime models
-                _cachedAnimeList = db.MiruAnimeModels.ToList();
+                _cachedAnimeList = db.MiruAnimeModels == null
+                    ? new List<MiruAnimeModel>()
+                    : db.MiruAnimeModels.ToList();
             }
         }
-
 
         // clears anime models and synced users tables
         public void ClearDb()
         {
             using (var db = CreateMiruDbContext.Invoke())
             {
-                db.ExecuteSqlCommand("TRUNCATE TABLE [MiruAnimeModels]");
-                db.ExecuteSqlCommand("TRUNCATE TABLE [SyncedMyAnimeListUsers]");
+                db.ExecuteSqlRaw("DELETE FROM [MiruAnimeModels]");
+                db.ExecuteSqlRaw("DELETE FROM [SyncedMyAnimeListUsers]");
             }
             _cachedAnimeList = null;
         }
@@ -152,7 +145,7 @@ namespace MiruDatabaseLogicLayer
             {
                 using (var db = CreateMiruDbContext.Invoke())
                 {
-                    _cachedAnimeList = db.MiruAnimeModels.ToList();
+                    _cachedAnimeList = db.MiruAnimeModels == null ? new List<MiruAnimeModel>() : db.MiruAnimeModels.ToList();
                 }
             }
             var userAnimeList = GetFilteredUserAnimeList(selectedAnimeBroadcastType, animeTitleToFilterBy, selectedTimeZone, ageRating);
@@ -165,6 +158,14 @@ namespace MiruDatabaseLogicLayer
                                                              TimeZoneInfo selectedTimeZone,
                                                              AgeRating ageRating)
         {
+            if (_cachedAnimeList == null)
+            {
+                using (var db = CreateMiruDbContext.Invoke())
+                {
+                    _cachedAnimeList = db.MiruAnimeModels == null ? new List<MiruAnimeModel>() : db.MiruAnimeModels.ToList();
+                }
+            }
+
             if (_cachedAnimeList == null || _cachedAnimeList.Count == 0)
                 return new List<MiruAnimeModel>();
 
@@ -224,7 +225,7 @@ namespace MiruDatabaseLogicLayer
                 // if SyncedMyAnimeListUsers table is not empty then delete all rows
                 if (db.SyncedMyAnimeListUsers.Any())
                 {
-                    db.ExecuteSqlCommand("TRUNCATE TABLE [SyncedMyAnimeListUsers]");
+                    db.ExecuteSqlRaw("DELETE FROM [SyncedMyAnimeListUsers]");
                 }
 
                 // store the current user's username and sync date to the SyncedMyAnimeListUsers table
@@ -263,7 +264,7 @@ namespace MiruDatabaseLogicLayer
                 detailedAnimeList.ParseTimeFromBroadcast(FileSystemService.Value);
 
                 // clear MiruAnimeModels table from any data
-                db.ExecuteSqlCommand("TRUNCATE TABLE [MiruAnimeModels]");
+                db.ExecuteSqlRaw("DELETE FROM [MiruAnimeModels]");
 
                 // add miruAnimeModelsList to the MiruAnimeModels table
                 db.MiruAnimeModels.AddRange(detailedAnimeList);
