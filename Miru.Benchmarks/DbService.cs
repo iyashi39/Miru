@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using AgeRating = MiruLibrary.AgeRating;
 
 namespace Miru.Benchmarks
@@ -35,7 +36,16 @@ namespace Miru.Benchmarks
             builder.RegisterType<WebService>().As<IWebService>();
             builder.RegisterType<FileSystemService>().As<IFileSystemService>();
             builder.RegisterType<MiruAnimeModel>();
-            builder.RegisterType<MiruDbContext>().As<IMiruDbContext>();
+            var databaseFolder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Miru");
+            Directory.CreateDirectory(databaseFolder);
+            var databasePath = Path.Combine(databaseFolder, "MiruDatabase.sqlite");
+            builder.Register(_ => new MiruDbContext(
+                new DbContextOptionsBuilder<MiruDbContext>()
+                    .UseSqlite($"Data Source={databasePath}")
+                    .Options))
+                .As<IMiruDbContext>();
 
             // Build the container
             var container = builder.Build();

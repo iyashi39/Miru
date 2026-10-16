@@ -7,13 +7,10 @@ using Caliburn.Micro;
 using MiruDatabaseLogicLayer;
 using MiruLibrary.Models;
 using Miru.ViewModels;
-using System.Data.Common;
 using System.Windows;
 using JikanDotNet;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
-using System.Data.SQLite.EF6;
 using System.IO;
 using MiruLibrary.Settings;
 using MiruLibrary;
@@ -21,6 +18,7 @@ using System.IO.Abstractions;
 using MyInternetConnectionLibrary;
 using MiruLibrary.Services;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.EntityFrameworkCore;
 
 namespace Miru
 {
@@ -74,7 +72,15 @@ namespace Miru
                 .SingleInstance();
             builder.RegisterType<ToastNotifierWrapper>().As<IToastNotifierWrapper>();
             builder.RegisterType<MiruAnimeModelProcessor>().As<IMiruAnimeModelProcessor>();
-            builder.RegisterType<MiruDbContext>().As<IMiruDbContext>();
+            var databasePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Miru",
+                "MiruDatabase.sqlite");
+            builder.Register(_ => new MiruDbContext(
+                new DbContextOptionsBuilder<MiruDbContext>()
+                    .UseSqlite($"Data Source={databasePath}")
+                    .Options))
+                .As<IMiruDbContext>();
             builder.RegisterType<FileSystem>().As<IFileSystem>();
             builder.RegisterType<FileSystemService>().As<IFileSystemService>();
             builder.RegisterType<SyncedMyAnimeListUser>().As<ISyncedMyAnimeListUser>();
@@ -106,18 +112,11 @@ namespace Miru
 
         protected override async void OnStartup(object sender, StartupEventArgs e)
         {
-            // on .NET (Core) DbProviderFactories are not read from app.config,
-            // so register the SQLite provider (and its EF6 wrapper) in code
-            DbProviderFactories.RegisterFactory("System.Data.SQLite", SQLiteFactory.Instance);
-            DbProviderFactories.RegisterFactory("System.Data.SQLite.EF6", SQLiteProviderFactory.Instance);
-
             // store the local sqlite database in %LOCALAPPDATA%\Miru so the app works
             // without SQL Server / LocalDB installed
             var appDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Miru");
             Directory.CreateDirectory(appDataFolder);
             Directory.CreateDirectory(Path.Combine(appDataFolder, "MiruCache"));
-            AppDomain.CurrentDomain.SetData("DataDirectory", appDataFolder);
-
             // set starting view for this app
             await DisplayRootViewForAsync<IShellViewModel>();
         }

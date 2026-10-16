@@ -13,13 +13,13 @@ using Moq;
 using MyInternetConnectionLibrary;
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
+using Microsoft.EntityFrameworkCore;
 using AnimeType = MiruLibrary.AnimeType;
 
 namespace Miru.Tests.DatabaseTests
@@ -44,8 +44,9 @@ namespace Miru.Tests.DatabaseTests
                                                      [Optional] IQueryable<MiruAnimeModel> miruAnimeModelDbSetData,                                                     
                                                      out IMiruDbContext miruDbContext)
         {
-            mockContext.Setup(s => s.ExecuteSqlCommand("DELETE FROM [MiruAnimeModels]")).Returns(0);
-            mockContext.Setup(s => s.ExecuteSqlCommand("DELETE FROM [SyncedMyAnimeListUsers]")).Returns(0);
+            mockContext.Setup(s => s.EnsureCreated()).Returns(true);
+            mockContext.Setup(s => s.ExecuteSqlRaw("DELETE FROM [MiruAnimeModels]")).Returns(0);
+            mockContext.Setup(s => s.ExecuteSqlRaw("DELETE FROM [SyncedMyAnimeListUsers]")).Returns(0);
 
             // https://docs.microsoft.com/en-us/ef/ef6/fundamentals/testing/mocking
             // wire up the IQueryable implementation for the DbSet more info in the link above
@@ -176,6 +177,7 @@ namespace Miru.Tests.DatabaseTests
                 // Assert
                 Assert.Equal(testSyncDate, cls.SyncDateData);
                 Assert.Equal(testUsername, cls.CurrentUsername);
+                mockContext.Verify(s => s.EnsureCreated(), Times.Once);
             }
         }
 
@@ -246,8 +248,8 @@ namespace Miru.Tests.DatabaseTests
                 cls.ClearDb();
 
                 // Assert
-                mockContext.Verify(x => x.ExecuteSqlCommand("DELETE FROM [MiruAnimeModels]"), Times.Once);
-                mockContext.Verify(x => x.ExecuteSqlCommand("DELETE FROM [SyncedMyAnimeListUsers]"), Times.Once);
+                mockContext.Verify(x => x.ExecuteSqlRaw("DELETE FROM [MiruAnimeModels]"), Times.Once);
+                mockContext.Verify(x => x.ExecuteSqlRaw("DELETE FROM [SyncedMyAnimeListUsers]"), Times.Once);
             }
         }
 
@@ -337,7 +339,7 @@ namespace Miru.Tests.DatabaseTests
                 cls.SaveSyncedUserData(It.IsAny<string>()).Wait();
 
                 // Assert
-                mockContext.Verify(x => x.ExecuteSqlCommand("DELETE FROM [SyncedMyAnimeListUsers]"), truncateTimesExecuted);
+                mockContext.Verify(x => x.ExecuteSqlRaw("DELETE FROM [SyncedMyAnimeListUsers]"), truncateTimesExecuted);
             }
         }
 
@@ -384,7 +386,7 @@ namespace Miru.Tests.DatabaseTests
 
                 // Assert
                 Assert.Equal(expectedTimesEventFired, eventExecutedTimes);
-                mockContext.Verify(x => x.ExecuteSqlCommand("DELETE FROM [MiruAnimeModels]"), timesCalled);
+                mockContext.Verify(x => x.ExecuteSqlRaw("DELETE FROM [MiruAnimeModels]"), timesCalled);
                 mockContext.Verify(x => x.MiruAnimeModels.AddRange(It.IsAny<List<MiruAnimeModel>>()), timesCalled);
                 mockContext.Verify(x => x.SaveChangesAsync(), timesCalled);
                 Assert.Equal(!connectionIssues, result);

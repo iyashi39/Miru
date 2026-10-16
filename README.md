@@ -51,7 +51,7 @@ dotnet run --project Miru\Miru.csproj
 You can also open `Miru.sln` in Visual Studio 2026 and build the `Miru` project.
 
 ## Database
-The app targets .NET 10 and uses Entity Framework 6 with SQLite (`System.Data.SQLite`) for local storage. The database file (`MiruDatabase.sqlite`) is stored in `%LOCALAPPDATA%\Miru\` and its required tables are initialized automatically on first run. No SQL Server or LocalDB installation is required. Existing LocalDB databases are not migrated, so synced data has to be downloaded again after switching to SQLite.
+The app targets .NET 10 and uses Entity Framework Core 10 with SQLite (`Microsoft.Data.Sqlite`) for local storage. The database file (`MiruDatabase.sqlite`) is stored in `%LOCALAPPDATA%\Miru\`; EF Core creates its tables automatically on first run. Existing SQLite files are reused without changing their schema; schema changes will require an explicit EF Core migration. Existing LocalDB databases are not migrated, so synced data has to be downloaded again after switching to SQLite. No SQL Server or LocalDB installation is required.
 
 # Changelog
 For older changes go to the releases page and browse older releases.

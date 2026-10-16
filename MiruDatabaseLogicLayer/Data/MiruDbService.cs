@@ -10,10 +10,6 @@ using MyInternetConnectionLibrary;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.Entity;
-using System.Data.SQLite;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AnimeType = MiruLibrary.AnimeType;
@@ -106,51 +102,9 @@ namespace MiruDatabaseLogicLayer
         // load data from the last sync
         public void LoadLastSyncedData()
         {
-            // create the database if it doesn't exist
-            Database.SetInitializer(new CreateDatabaseIfNotExists<MiruDbContext>());
-
-            // open temporary connection to the database
             using (var db = CreateMiruDbContext.Invoke())
             {
-                // SQLite can create an empty file simply by opening a missing path.
-                // Recreate that file if it does not contain the tables required by this model.
-                if (!HasRequiredTables(db))
-                {
-                    DeleteSqliteDatabaseFile(db);
-
-                    // SQLite's EF6 provider does not implement EF database creation APIs.
-                    // Opening the connection creates the empty file, so create the tables
-                    // directly with SQLite SQL instead.
-                    using (var databaseCreationContext = CreateMiruDbContext.Invoke())
-                    {
-                        databaseCreationContext.ExecuteSqlCommand(@"
-                            CREATE TABLE SyncedMyAnimeListUsers (
-                                Username TEXT NOT NULL PRIMARY KEY,
-                                SyncTime DATETIME NOT NULL
-                            )");
-
-                        databaseCreationContext.ExecuteSqlCommand(@"
-                            CREATE TABLE MiruAnimeModels (
-                                MalId INTEGER NOT NULL PRIMARY KEY,
-                                Broadcast TEXT,
-                                Title TEXT,
-                                URL TEXT,
-                                ImageURL TEXT,
-                                LocalImagePath TEXT,
-                                LocalBroadcastTime DATETIME,
-                                JSTBroadcastTime DATETIME,
-                                IsOnWatchingList INTEGER NOT NULL,
-                                CurrentlyAiring INTEGER NOT NULL,
-                                WatchedEpisodes INTEGER,
-                                AgeRating TEXT,
-                                Type TEXT,
-                                TotalEpisodes INTEGER,
-                                Dropped INTEGER NOT NULL,
-                                OpeningThemes TEXT,
-                                EndingThemes TEXT
-                            )");
-                    }
-                }
+                db.EnsureCreated();
 
                 // if SyncedMyAnimeListUsers table is not empty
                 if (db.SyncedMyAnimeListUsers != null && db.SyncedMyAnimeListUsers.Any())
@@ -169,73 +123,13 @@ namespace MiruDatabaseLogicLayer
             }
         }
 
-        private static void DeleteSqliteDatabaseFile(IMiruDbContext db)
-        {
-            const string dataDirectoryToken = "|DataDirectory|";
-            var connection = db.Database.Connection;
-            var dataSource = new SQLiteConnectionStringBuilder(connection.ConnectionString).DataSource;
-
-            if (dataSource.StartsWith(dataDirectoryToken, StringComparison.OrdinalIgnoreCase))
-            {
-                var dataDirectory = AppDomain.CurrentDomain.GetData("DataDirectory") as string;
-                if (string.IsNullOrWhiteSpace(dataDirectory))
-                {
-                    throw new InvalidOperationException("The SQLite DataDirectory is not configured.");
-                }
-
-                dataSource = Path.Combine(
-                    dataDirectory,
-                    dataSource.Substring(dataDirectoryToken.Length).TrimStart('\\', '/'));
-            }
-
-            dataSource = Path.GetFullPath(dataSource);
-            connection.Close();
-            SQLiteConnection.ClearAllPools();
-
-            if (File.Exists(dataSource))
-            {
-                File.Delete(dataSource);
-            }
-        }
-
-        private static bool HasRequiredTables(IMiruDbContext db)
-        {
-            var connection = db.Database.Connection;
-            try
-            {
-                if (connection.State != ConnectionState.Open)
-                {
-                    connection.Open();
-                }
-
-                using (var command = connection.CreateCommand())
-                {
-                    command.CommandText = @"
-                        SELECT COUNT(*)
-                        FROM sqlite_master
-                        WHERE type = 'table'
-                          AND name IN ('SyncedMyAnimeListUsers', 'MiruAnimeModels')";
-
-                    return Convert.ToInt32(command.ExecuteScalar()) == 2;
-                }
-            }
-            finally
-            {
-                if (connection.State != ConnectionState.Closed)
-                {
-                    connection.Close();
-                }
-            }
-        }
-
-
         // clears anime models and synced users tables
         public void ClearDb()
         {
             using (var db = CreateMiruDbContext.Invoke())
             {
-                db.ExecuteSqlCommand("DELETE FROM [MiruAnimeModels]");
-                db.ExecuteSqlCommand("DELETE FROM [SyncedMyAnimeListUsers]");
+                db.ExecuteSqlRaw("DELETE FROM [MiruAnimeModels]");
+                db.ExecuteSqlRaw("DELETE FROM [SyncedMyAnimeListUsers]");
             }
             _cachedAnimeList = null;
         }
@@ -331,7 +225,7 @@ namespace MiruDatabaseLogicLayer
                 // if SyncedMyAnimeListUsers table is not empty then delete all rows
                 if (db.SyncedMyAnimeListUsers.Any())
                 {
-                    db.ExecuteSqlCommand("DELETE FROM [SyncedMyAnimeListUsers]");
+                    db.ExecuteSqlRaw("DELETE FROM [SyncedMyAnimeListUsers]");
                 }
 
                 // store the current user's username and sync date to the SyncedMyAnimeListUsers table
@@ -370,7 +264,7 @@ namespace MiruDatabaseLogicLayer
                 detailedAnimeList.ParseTimeFromBroadcast(FileSystemService.Value);
 
                 // clear MiruAnimeModels table from any data
-                db.ExecuteSqlCommand("DELETE FROM [MiruAnimeModels]");
+                db.ExecuteSqlRaw("DELETE FROM [MiruAnimeModels]");
 
                 // add miruAnimeModelsList to the MiruAnimeModels table
                 db.MiruAnimeModels.AddRange(detailedAnimeList);
