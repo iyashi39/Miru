@@ -55,13 +55,11 @@ The app targets .NET 10 and uses Entity Framework Core 10 with SQLite (`Microsof
 
 # Changelog
 For older changes go to the releases page and browse older releases.
-### Miru 2.4
-* Added progress bar that displays download progress of anime data: ![progress bar img](https://user-images.githubusercontent.com/38395954/180602002-8a5c0b4b-5f8c-4b1b-b75a-81a25e3c8442.png)
-![season sync progress bar img](https://user-images.githubusercontent.com/38395954/180602324-79d5386f-9b66-422d-88d2-0fec62c01911.png)
+### Miru 3.0.0
+* Migrated the data layer from EF6 to EF Core 10 using SQLite.
 
-* After using <kbd>CTRL</kbd> + <kbd>F</kbd> or <kbd>CTRL</kbd> + <kbd>M</kbd> to focus text boxes select all text of the text box.
-* **Get Dropped Anime Data** checkbox default value changed to `true`.
-### Coming in Miru 2.4.1
+
+### Miru 2.4.1
 * Added ability to copy anime opening or ending theme by using mouse `right-click` on the title tile.  
 Then click the `OP` or `ED` button to copy opening or ending themes or `double-click`/`mouse roll button click` a specific theme in the dialog window.  
 Example:  
@@ -69,3 +67,9 @@ Example:
 * You can select any part of the OP/ED dialog content and copy it like in this example:
 ![selection of OP/ED dialog content](https://github.com/iyarashii/Miru/assets/38395954/934de3ee-876d-4c84-8450-0afd52949a56)
 
+### Miru 2.4
+* Added progress bar that displays download progress of anime data: ![progress bar img](https://user-images.githubusercontent.com/38395954/180602002-8a5c0b4b-5f8c-4b1b-b75a-81a25e3c8442.png)
+![season sync progress bar img](https://user-images.githubusercontent.com/38395954/180602324-79d5386f-9b66-422d-88d2-0fec62c01911.png)
+
+* After using <kbd>CTRL</kbd> + <kbd>F</kbd> or <kbd>CTRL</kbd> + <kbd>M</kbd> to focus text boxes select all text of the text box.
+* **Get Dropped Anime Data** checkbox default value changed to `true`.
