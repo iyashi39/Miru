@@ -12,5 +12,6 @@ namespace MiruLibrary.Services
         void ExitEnvironment(int exitCode);
         RegistryKey OpenLocalMachineSubKey(string name);
         Process StartProcess(string fileName);
+        Process OpenUrl(string url);
     }
 }
