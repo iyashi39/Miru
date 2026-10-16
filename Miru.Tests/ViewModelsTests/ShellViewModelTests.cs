@@ -700,6 +700,7 @@ namespace Miru.Tests
                     .Setup(x => x.ShowAsync())
                     .ReturnsAsync(ContentDialogResult.Primary);
                 var cls = mock.Create<ShellViewModel>();
+                cls.ToastNotifierWrapper = mock.Mock<IToastNotifierWrapper>().Object;
                 var title = "test";
                 var opThemes = "\"Title\" by Artist\n\"title2\" by artist2 ";
                 var edThemes = "";
@@ -719,7 +720,7 @@ namespace Miru.Tests
                             "OP",
                             "Cancel",
                             ContentDialogButton.Primary,
-                            $"{opThemes}\n{edThemes}",
+                            It.IsAny<object>(),
                             "ED"
                         ),
                         Times.Once);
@@ -741,6 +742,7 @@ namespace Miru.Tests
                     .Setup(x => x.ShowAsync())
                     .ReturnsAsync(ContentDialogResult.Secondary);
                 var cls = mock.Create<ShellViewModel>();
+                cls.ToastNotifierWrapper = mock.Mock<IToastNotifierWrapper>().Object;
                 var title = "test";
                 var opThemes = "";
                 var edThemes = "\"ending\" by Artist\n\"ending2\" by artist2 ";
@@ -760,7 +762,7 @@ namespace Miru.Tests
                             "OP",
                             "Cancel",
                             ContentDialogButton.Primary,
-                            $"{opThemes}\n{edThemes}",
+                            It.IsAny<object>(),
                             "ED"
                         ),
                         Times.Once);

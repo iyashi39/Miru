@@ -1,15 +1,19 @@
-﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
+﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39
 // Licensed under the GNU General Public License v3.0,
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
 using Autofac;
-using Caliburn.Micro.Autofac;
+using Caliburn.Micro;
 using MiruDatabaseLogicLayer;
 using MiruLibrary.Models;
 using Miru.ViewModels;
+using System.Data.Common;
 using System.Windows;
 using JikanDotNet;
 using System;
+using System.Collections.Generic;
+using System.Data.SQLite;
+using System.Data.SQLite.EF6;
 using System.IO;
 using MiruLibrary.Settings;
 using MiruLibrary;
@@ -21,15 +25,25 @@ using System.Diagnostics.CodeAnalysis;
 namespace Miru
 {
     [ExcludeFromCodeCoverage]
-    public class Bootstrapper : AutofacBootstrapper<IShellViewModel>
+    public class Bootstrapper : BootstrapperBase
     {
+        private IContainer Container { get; set; }
+
         public Bootstrapper()
         {
             Initialize();
         }
 
-        protected override void ConfigureContainer(ContainerBuilder builder)
+        protected override void Configure()
         {
+            var builder = new ContainerBuilder();
+            ConfigureContainer(builder);
+            Container = builder.Build();
+        }
+
+        protected void ConfigureContainer(ContainerBuilder builder)
+        {
+            builder.RegisterType<WindowManager>().As<IWindowManager>().SingleInstance();
             builder.RegisterType<SortedAnimeListsViewModel>().As<ISortedAnimeListsViewModel>();
             builder.RegisterType<ShellViewModel>()
                 .As<IShellViewModel>()
@@ -74,14 +88,29 @@ namespace Miru
             builder.RegisterModule(new SettingsModule());
         }
 
-        protected override void ConfigureBootstrapper()
+        protected override object GetInstance(Type service, string key)
         {
-            base.ConfigureBootstrapper();
-            EnforceNamespaceConvention = false;
+            return key == null ? Container.Resolve(service) : Container.ResolveKeyed(key, service);
+        }
+
+        protected override IEnumerable<object> GetAllInstances(Type service)
+        {
+            var listOfServiceType = typeof(IList<>).MakeGenericType(service);
+            return (IEnumerable<object>)Container.Resolve(listOfServiceType);
+        }
+
+        protected override void BuildUp(object instance)
+        {
+            Container.InjectProperties(instance);
         }
 
         protected override async void OnStartup(object sender, StartupEventArgs e)
         {
+            // on .NET (Core) DbProviderFactories are not read from app.config,
+            // so register the SQLite provider (and its EF6 wrapper) in code
+            DbProviderFactories.RegisterFactory("System.Data.SQLite", SQLiteFactory.Instance);
+            DbProviderFactories.RegisterFactory("System.Data.SQLite.EF6", SQLiteProviderFactory.Instance);
+
             // store the local sqlite database in %LOCALAPPDATA%\Miru so the app works
             // without SQL Server / LocalDB installed
             var appDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Miru");
@@ -90,7 +119,7 @@ namespace Miru
             AppDomain.CurrentDomain.SetData("DataDirectory", appDataFolder);
 
             // set starting view for this app
-            DisplayRootViewFor<IShellViewModel>();
+            await DisplayRootViewForAsync<IShellViewModel>();
         }
 
         protected override void OnExit(object sender, EventArgs e)
