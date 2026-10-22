@@ -1,10 +1,10 @@
-﻿// Copyright iyashi39 @ https://github.com/iyashi39 
+// Copyright iyashi39 @ https://github.com/iyashi39 
 // Licensed under the GNU General Public License v3.0,
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
 using Autofac;
 using BenchmarkDotNet.Attributes;
-using JikanDotNet;
+using MyInternetConnectionLibrary.Anime;
 using MiruDatabaseLogicLayer;
 using MiruLibrary;
 using MiruLibrary.Models;
@@ -32,7 +32,7 @@ namespace Miru.Benchmarks
             // Register dependencies as in Bootstrapper.cs
             builder.RegisterType<MiruDbService>().As<IMiruDbService>();
             builder.RegisterType<UserDataService>().As<IUserDataService>();
-            builder.RegisterType<Jikan>().As<IJikan>();
+            builder.Register(_ => new AnimeApiClient(new System.Net.Http.HttpClient(), MiruLibrary.Constants.DefaultAnimeApiBaseUrl)).As<IAnimeApiClient>();
             builder.RegisterType<WebService>().As<IWebService>();
             builder.RegisterType<FileSystemService>().As<IFileSystemService>();
             builder.RegisterType<MiruAnimeModel>();

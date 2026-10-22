@@ -1,8 +1,8 @@
-﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
+// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
 // Licensed under the GNU General Public License v3.0,
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
-using JikanDotNet;
+using MyInternetConnectionLibrary.Anime;
 using MiruLibrary.Models;
 using System;
 using System.Collections.Generic;
@@ -27,7 +27,7 @@ namespace MiruDatabaseLogicLayer
 
         void ChangeDisplayedAnimeList(AnimeListType animeListType, TimeZoneInfo selectedTimeZone, AnimeType selectedAnimeBroadcastType, string animeTitleToFilterBy, AgeRating ageRating);
         void ClearDb();
-        Task<List<MiruAnimeModel>> GetDetailedUserAnimeList(IMiruDbContext db, ICollection<AnimeListEntry> currentUserAnimeListEntries, bool seasonSyncOn);
+        Task<List<MiruAnimeModel>> GetDetailedUserAnimeList(IMiruDbContext db, ICollection<AnimeDto> currentUserAnimeListEntries, bool seasonSyncOn);
         void LoadLastSyncedData();
         Task<bool> SaveDetailedAnimeListData(bool seasonSyncOn);
         Task SaveSyncedUserData(string typedInUsername);

@@ -2,7 +2,7 @@
 // Licensed under the GNU General Public License v3.0,
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
-using JikanDotNet;
+using MyInternetConnectionLibrary.Anime;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -211,42 +211,95 @@ namespace MiruLibrary.Models
             return true;
         }
 
-        public static void SetAiringAnimeModelData(this MiruAnimeModel animeModel, Anime animeInfo, 
-            AnimeListEntry animeListEntry, ICurrentUserAnimeListModel currentUserAnimeList)
+        public static void SetAiringAnimeModelData(this MiruAnimeModel animeModel, AnimeDto animeInfo, 
+            AnimeDto animeListEntry, ICurrentUserAnimeListModel currentUserAnimeList)
         {
-            animeModel.MalId = animeInfo.MalId;
-            animeModel.Broadcast = animeInfo.Broadcast ?? animeInfo.Aired?.From.ToString();
+            animeModel.MalId = animeInfo.MalId ?? 0;
+            animeModel.Broadcast = GetBroadcastString(animeInfo);
             animeModel.Title = animeInfo.Title;
-            animeModel.ImageURL = animeInfo.ImageURL;
-            animeModel.LocalImagePath = animeInfo.MalId.ToString();
-            animeModel.TotalEpisodes = animeListEntry.TotalEpisodes;
-            animeModel.URL = animeListEntry.URL;
-            animeModel.WatchedEpisodes = animeListEntry.WatchedEpisodes;
+            animeModel.ImageURL = GetImageUrl(animeInfo);
+            animeModel.LocalImagePath = animeModel.MalId.ToString();
+            animeModel.TotalEpisodes = animeListEntry.TotalEpisodes ?? animeInfo.Episodes ?? 0;
+            animeModel.URL = animeListEntry.Url;
+            animeModel.WatchedEpisodes = animeListEntry.WatchedEpisodes ?? 0;
             animeModel.IsOnWatchingList = true;
-            animeModel.CurrentlyAiring = animeListEntry.AiringStatus == AiringStatus.Airing;
+            animeModel.CurrentlyAiring = IsAiring(animeListEntry);
             animeModel.Type = animeInfo.Type;
             animeModel.UpdateDroppedStatus(currentUserAnimeList);
-            animeModel.OpeningThemes = JsonConvert.SerializeObject(animeInfo.OpeningTheme);
-            animeModel.EndingThemes = JsonConvert.SerializeObject(animeInfo.EndingTheme);
+            animeModel.OpeningThemes = JsonConvert.SerializeObject(GetOpeningTheme(animeInfo));
+            animeModel.EndingThemes = JsonConvert.SerializeObject(GetEndingTheme(animeInfo));
             animeModel.AgeRating = animeInfo.Rating;
         }
 
-        public static void SetSeasonalAnimeModelData(this MiruAnimeModel animeModel, Anime animeInfo, 
-            AnimeSubEntry seasonEntry, ICurrentUserAnimeListModel currentUserAnimeList)
+        public static void SetSeasonalAnimeModelData(this MiruAnimeModel animeModel, AnimeDto animeInfo, 
+            AnimeDto seasonEntry, ICurrentUserAnimeListModel currentUserAnimeList)
         {
-            animeModel.MalId = animeInfo.MalId;
-            animeModel.Broadcast = animeInfo.Broadcast ?? animeInfo.Aired?.From.ToString();
+            animeModel.MalId = animeInfo.MalId ?? 0;
+            animeModel.Broadcast = GetBroadcastString(animeInfo);
             animeModel.Title = animeInfo.Title;
-            animeModel.ImageURL = animeInfo.ImageURL;
-            animeModel.LocalImagePath = animeInfo.MalId.ToString();
-            animeModel.URL = seasonEntry.URL;
+            animeModel.ImageURL = GetImageUrl(animeInfo);
+            animeModel.LocalImagePath = animeModel.MalId.ToString();
+            animeModel.URL = seasonEntry.Url;
             animeModel.IsOnWatchingList = false;
             animeModel.CurrentlyAiring = true;
             animeModel.Type = animeInfo.Type;
             animeModel.UpdateDroppedStatus(currentUserAnimeList);
-            animeModel.OpeningThemes = JsonConvert.SerializeObject(animeInfo.OpeningTheme);
-            animeModel.EndingThemes = JsonConvert.SerializeObject(animeInfo.EndingTheme);
+            animeModel.OpeningThemes = JsonConvert.SerializeObject(GetOpeningTheme(animeInfo));
+            animeModel.EndingThemes = JsonConvert.SerializeObject(GetEndingTheme(animeInfo));
             animeModel.AgeRating = animeInfo.Rating;
+        }
+
+        /// <summary>
+        /// Creates the broadcast string in the same format as the one returned by the old api
+        /// (e.g. "Sundays at 17:00 (JST)"), because the day and the time are parsed from it.
+        /// </summary>
+        public static string GetBroadcastString(AnimeDto animeInfo)
+        {
+            var broadcast = animeInfo?.Broadcast;
+
+            if (broadcast != null)
+            {
+                // the api returns the broadcast string ready to use, e.g. "Fridays at 23:00 (JST)"
+                if (!string.IsNullOrWhiteSpace(broadcast.String))
+                {
+                    return broadcast.String;
+                }
+
+                if (!string.IsNullOrWhiteSpace(broadcast.Day) && !string.IsNullOrWhiteSpace(broadcast.Time))
+                {
+                    var timezone = string.IsNullOrWhiteSpace(broadcast.Timezone) ? string.Empty : $" ({broadcast.Timezone})";
+                    return $"{broadcast.Day} at {broadcast.Time}{timezone}";
+                }
+            }
+
+            return animeInfo?.Aired?.From?.ToString();
+        }
+
+        public static string GetImageUrl(AnimeDto animeInfo)
+        {
+            return animeInfo?.Images?.Jpg?.LargeImageUrl
+                   ?? animeInfo?.Images?.Jpg?.ImageUrl
+                   ?? animeInfo?.Images?.WebP?.LargeImageUrl;
+        }
+
+        public static bool IsAiring(AnimeDto anime)
+        {
+            if (anime == null) return false;
+
+            if (anime.Airing == true) return true;
+            if (anime.AiringStatus != null && anime.AiringStatus.Equals("Currently Airing", StringComparison.OrdinalIgnoreCase)) return true;
+
+            return anime.Status != null && anime.Status.Equals("Currently Airing", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string GetOpeningTheme(AnimeDto animeInfo)
+        {
+            return animeInfo?.Theme?.Openings?.FirstOrDefault();
+        }
+
+        public static string GetEndingTheme(AnimeDto animeInfo)
+        {
+            return animeInfo?.Theme?.Endings?.FirstOrDefault();
         }
 
         public static void UpdateDroppedStatus(this MiruAnimeModel animeModel, ICurrentUserAnimeListModel currentUserAnimeListModel)
@@ -256,6 +309,5 @@ namespace MiruLibrary.Models
                 ?.Anime
                 .Select(x => x.MalId)
                 .Contains(animeModel.MalId) ?? false;
-        }
-    }
+        }    }
 }

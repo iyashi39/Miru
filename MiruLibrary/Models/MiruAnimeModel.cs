@@ -3,6 +3,7 @@
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -105,17 +106,33 @@ namespace MiruLibrary.Models
 
         public string FormatThemesOutput(string themeType, string themesJsonContent)
         {
+            if (string.IsNullOrWhiteSpace(themesJsonContent))
+            {
+                return $"{themeType}\n";
+            }
+
             StringBuilder uiOutput = new StringBuilder($"{themeType}\n");
+
             try
             {
-                var themes = JsonConvert.DeserializeObject<List<string>>(themesJsonContent);
-                for (int i = 0; i < themes.Count; i++)
+                var token = JToken.Parse(themesJsonContent);
+
+                if (token.Type == JTokenType.Array)
                 {
-                    uiOutput.Append($"{themes[i]}\n");
+                    foreach (var theme in token)
+                    {
+                        uiOutput.Append($"{theme}\n");
+                    }
+                }
+                else
+                {
+                    // a single theme saved as a json string
+                    uiOutput.Append($"{token}\n");
                 }
             }
-            catch (Exception)
+            catch (JsonException)
             {
+                // the content is not a json (e.g. it was saved by an older version of the app)
                 uiOutput = new StringBuilder(themesJsonContent);
             }
 

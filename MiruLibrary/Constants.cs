@@ -13,5 +13,11 @@ namespace MiruLibrary
 
         public static string ImageCacheFolderPath { get; } = Path.Combine(AppDataRoot, "MiruCache");
         public static string SettingsPath { get; } = Path.Combine(AppDataRoot, "MiruCache", "config.json");
+
+        /// <summary>
+        /// Default url of the Jikan REST API v4 (the Tenrai API v1 uses the same schema).
+        /// It can be changed in the user settings (config.json).
+        /// </summary>
+        public const string DefaultAnimeApiBaseUrl = "http://localhost:8080/v4/";
     }
 }

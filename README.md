@@ -1,5 +1,9 @@
 # Miru
-Miru is a WPF app used to display data from the [jikan](https://github.com/Ervie/jikan.net) MyAnimeList API.
+Miru is a WPF app used to display data from the [Jikan REST API v4](https://github.com/jikan-me/jikan-rest) MyAnimeList API.
+The API is called through a small built-in client, so the app works with a self-hosted Jikan v4 instance
+(the same schema is used by the [Tenrai API](https://tenrai.org), so its url works too).
+The address of the api can be changed in the `AnimeApiBaseUrl` setting of the `config.json` file
+located in the `%LOCALAPPDATA%\Miru\MiruCache` folder (by default it points to `http://localhost:8080/v4/`).
 ![App main view](https://user-images.githubusercontent.com/38395954/180601939-adcd1279-217e-4fe0-a47f-0b1b808a6b69.png)
 
 
