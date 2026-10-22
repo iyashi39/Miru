@@ -192,5 +192,68 @@ namespace Miru.Tests.ModelsTests
                 Assert.Equal("ED\nsong1\nsong2\nsong3\n", result);
             }
         }
+
+        [Fact]
+        public void GetEndingTheme_GivenMultipleThemes_ReturnsAllThemes()
+        {
+            // Arrange
+            var animeInfo = new MyInternetConnectionLibrary.Anime.AnimeDto
+            {
+                Theme = new MyInternetConnectionLibrary.Anime.AnimeThemeDto
+                {
+                    Openings = new List<string> { "\"song\" by artist" },
+                    Endings = new List<string> { "1: \"song\" by artist", "2: \"song 2\" by artist" }
+                }
+            };
+
+            // Act
+            var openings = MiruAnimeModelExtensions.GetOpeningTheme(animeInfo);
+            var endings = MiruAnimeModelExtensions.GetEndingTheme(animeInfo);
+
+            // Assert
+            Assert.Single(openings);
+            Assert.Equal(2, endings.Count);
+            Assert.Equal("2: \"song 2\" by artist", endings[1]);
+        }
+
+        [Fact]
+        public void ThemesStoredWithoutList_GivenSingleThemeJsonString_ReturnsTrue()
+        {
+            using (var mock = AutoMock.GetLoose())
+            {
+                // Arrange - older app versions stored only the first theme as a plain json string
+                var sut = mock.Create<MiruAnimeModel>();
+                sut.OpeningThemes = JsonConvert.SerializeObject("1: song");
+                sut.EndingThemes = JsonConvert.SerializeObject("1: song");
+
+                // Act
+                var openingResult = sut.OpeningThemesStoredWithoutList;
+                var endingResult = sut.EndingThemesStoredWithoutList;
+
+                // Assert
+                Assert.True(openingResult);
+                Assert.True(endingResult);
+            }
+        }
+
+        [Fact]
+        public void ThemesStoredWithoutList_GivenThemeListJson_ReturnsFalse()
+        {
+            using (var mock = AutoMock.GetLoose())
+            {
+                // Arrange
+                var sut = mock.Create<MiruAnimeModel>();
+                sut.OpeningThemes = JsonConvert.SerializeObject(new List<string> { "1: song", "2: song" });
+                sut.EndingThemes = JsonConvert.SerializeObject(new List<string> { "1: song", "2: song" });
+
+                // Act
+                var openingResult = sut.OpeningThemesStoredWithoutList;
+                var endingResult = sut.EndingThemesStoredWithoutList;
+
+                // Assert
+                Assert.False(openingResult);
+                Assert.False(endingResult);
+            }
+        }
     }
 }

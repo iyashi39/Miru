@@ -292,14 +292,16 @@ namespace MiruLibrary.Models
             return anime.Status != null && anime.Status.Equals("Currently Airing", StringComparison.OrdinalIgnoreCase);
         }
 
-        public static string GetOpeningTheme(AnimeDto animeInfo)
+        public static List<string> GetOpeningTheme(AnimeDto animeInfo)
         {
-            return animeInfo?.Theme?.Openings?.FirstOrDefault();
+            // return all opening themes, not just the first one
+            return animeInfo?.Theme?.Openings ?? new List<string>();
         }
 
-        public static string GetEndingTheme(AnimeDto animeInfo)
+        public static List<string> GetEndingTheme(AnimeDto animeInfo)
         {
-            return animeInfo?.Theme?.Endings?.FirstOrDefault();
+            // return all ending themes, not just the first one
+            return animeInfo?.Theme?.Endings ?? new List<string>();
         }
 
         public static void UpdateDroppedStatus(this MiruAnimeModel animeModel, ICurrentUserAnimeListModel currentUserAnimeListModel)

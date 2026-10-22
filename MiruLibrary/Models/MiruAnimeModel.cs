@@ -124,7 +124,7 @@ namespace MiruLibrary.Models
                         uiOutput.Append($"{theme}\n");
                     }
                 }
-                else
+                else if (token.Type != JTokenType.Null)
                 {
                     // a single theme saved as a json string
                     uiOutput.Append($"{token}\n");
@@ -137,6 +137,29 @@ namespace MiruLibrary.Models
             }
 
             return uiOutput.ToString();
+        }
+
+        // Older app versions saved only the first theme as a plain json string.
+        // Themes stored this way (or not as a json array at all) should be refreshed from the api.
+        public bool OpeningThemesStoredWithoutList => IsThemeStoredWithoutList(_openingThemes);
+        public bool EndingThemesStoredWithoutList => IsThemeStoredWithoutList(_endingThemes);
+
+        private static bool IsThemeStoredWithoutList(string themesJsonContent)
+        {
+            if (string.IsNullOrWhiteSpace(themesJsonContent))
+            {
+                return false;
+            }
+
+            try
+            {
+                return JToken.Parse(themesJsonContent).Type != JTokenType.Array;
+            }
+            catch (JsonException)
+            {
+                // plain text saved by an older version of the app
+                return true;
+            }
         }
     }
 }
