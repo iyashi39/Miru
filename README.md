@@ -59,6 +59,13 @@ The app targets .NET 10 and uses Entity Framework Core 10 with SQLite (`Microsof
 
 # Changelog
 For older changes go to the releases page and browse older releases.
+### Miru 3.1.0
+* Switched from the Jikan REST API **v3** to **v4**. Replaced the `JikanDotNet` library with a small built-in v4 client, because no .NET client supports the v4 user list endpoints yet.
+* The default API base URL is now `http://localhost:8080/v4/` (self-hosted Jikan v4 in Docker) and it can be changed with the `AnimeApiBaseUrl` setting in `config.json` (`%LOCALAPPDATA%\Miru\MiruCache`), so an existing v3 instance on port 9000 keeps working untouched.
+* `Get Shows From The Current Season` now requests the season with `continuing=true`, so anime continuing from the previous season are shown again (Jikan v4 omits them by default).
+* User anime list sync adapted to the v4 list format: paged with 300 entries per page and a server-side status filter with a client-side fallback.
+* OP/ED themes are now taken from the v4 `/anime/{id}/full` endpoint and are mapped to the backing fields, so they load correctly from the local database.
+
 ### Miru 3.0.0
 * Migrated the data layer from EF6 to EF Core 10 using SQLite.
 
