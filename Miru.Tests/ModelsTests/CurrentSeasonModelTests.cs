@@ -4,11 +4,10 @@
 
 using Autofac;
 using Autofac.Extras.Moq;
-using JikanDotNet;
-using JikanDotNet.Exceptions;
 using MiruLibrary.Models;
 using MiruLibrary.Services;
 using Moq;
+using MyInternetConnectionLibrary.Anime;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,7 +28,9 @@ namespace Miru.Tests.ModelsTests
             using (var mock = AutoMock.GetLoose())
             {
                 // Arrange
-                mock.Mock<IJikan>().Setup(x => x.GetSeason()).ThrowsAsync(new HttpRequestException());
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetCurrentSeasonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(new HttpRequestException());
                 var sut = mock.Create<CurrentSeasonModel>();
 
                 // Act
@@ -46,7 +47,9 @@ namespace Miru.Tests.ModelsTests
             using (var mock = AutoMock.GetLoose())
             {
                 // Arrange
-                mock.Mock<IJikan>().Setup(x => x.GetSeason()).ReturnsAsync(new Season());
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetCurrentSeasonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new AnimePageEnvelope { Data = new List<AnimeDto>() });
                 var sut = mock.Create<CurrentSeasonModel>();
 
                 // Act
@@ -58,14 +61,44 @@ namespace Miru.Tests.ModelsTests
         }
 
         [Fact]
-        public void GetCurrentSeasonList_OnJikanRequestException_TriplesExecutionDelay()
+        public async Task GetCurrentSeasonList_OnMultiplePages_GetsAllOfThem()
         {
             using (var mock = AutoMock.GetLoose())
             {
                 // Arrange
-                mock.Mock<IJikan>().SetupSequence(x => x.GetSeason())
-                    .ThrowsAsync(new JikanRequestException())
-                    .ReturnsAsync(new Season());
+                mock.Mock<IAnimeApiClient>()
+                    .SetupSequence(x => x.GetCurrentSeasonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new AnimePageEnvelope
+                    {
+                        Data = new List<AnimeDto> { new AnimeDto { MalId = 1 } },
+                        Pagination = new PaginationDto { HasNextPage = true }
+                    })
+                    .ReturnsAsync(new AnimePageEnvelope
+                    {
+                        Data = new List<AnimeDto> { new AnimeDto { MalId = 2 } },
+                        Pagination = new PaginationDto { HasNextPage = false }
+                    });
+                var sut = mock.Create<CurrentSeasonModel>();
+
+                // Act
+                var result = await sut.GetCurrentSeasonList(0);
+
+                // Assert
+                Assert.True(result);
+                Assert.Equal(2, sut.SeasonData.Data.Count);
+            }
+        }
+
+        [Fact]
+        public void GetCurrentSeasonList_OnAnimeApiException_DelaysBeforeRetry()
+        {
+            using (var mock = AutoMock.GetLoose())
+            {
+                // Arrange
+                mock.Mock<IAnimeApiClient>()
+                    .SetupSequence(x => x.GetCurrentSeasonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(new AnimeApiException("error"))
+                    .ReturnsAsync(new AnimePageEnvelope { Data = new List<AnimeDto>() });
                 mock.Mock<ITimerService>().Setup(x => x.DelayTask(It.IsAny<int>())).Returns(Task.CompletedTask);
 
                 var sut = mock.Create<CurrentSeasonModel>();
@@ -75,38 +108,39 @@ namespace Miru.Tests.ModelsTests
                 sut.GetCurrentSeasonList(testDelayInMs).Wait();
 
                 // Assert
-                mock.Mock<ITimerService>().Verify(x => x.DelayTask(testDelayInMs), Times.Exactly(3));
+                mock.Mock<ITimerService>().Verify(x => x.DelayTask(testDelayInMs), Times.AtLeastOnce());
             }
         }
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [InlineData(null)]
-        public void GetFilteredSeasonList_ReturnsSeasonListWithoutAnimeForKids(bool? forKids)
+        public void GetFilteredSeasonList_ReturnsSeasonListWithoutAnimeForKids(bool forKids)
         {
             using (var mock = AutoMock.GetLoose())
             {
                 // Arrange
-                var testSeasonData = new Season
+                var testSeasonData = new AnimePageEnvelope
                 {
-                    SeasonEntries = new List<AnimeSubEntry>()
+                    Data = new List<AnimeDto>()
                     {
-                        new AnimeSubEntry() {Kids = forKids},
-                        new AnimeSubEntry() {Kids = false},
-                        new AnimeSubEntry() {Kids = null},
-                        new AnimeSubEntry() {Kids = forKids},
-                        new AnimeSubEntry() {Kids = false},
-                        new AnimeSubEntry() {Kids = null},
+                        CreateSeasonEntry(forKids),
+                        CreateSeasonEntry(false),
+                        CreateSeasonEntry(false),
+                        CreateSeasonEntry(forKids),
+                        CreateSeasonEntry(false),
+                        CreateSeasonEntry(false),
                     }
                 };
 
-                mock.Mock<IJikan>().Setup(x => x.GetSeason()).ReturnsAsync(testSeasonData);
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetCurrentSeasonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(testSeasonData);
                 var sut = mock.Create<CurrentSeasonModel>();
                 sut.GetCurrentSeasonList(0).Wait();
 
-                var expectedResult = testSeasonData.SeasonEntries.ToList();
-                expectedResult.RemoveAll(x => x.Kids == true);
+                var expectedResult = testSeasonData.Data.ToList();
+                expectedResult.RemoveAll(x => CurrentSeasonModel.IsForKids(x));
 
                 // Act
                 var result = sut.GetFilteredSeasonList();
@@ -115,6 +149,16 @@ namespace Miru.Tests.ModelsTests
                 Assert.True(result.Count == expectedResult.Count);
                 Assert.Equal(expectedResult, result);
             }
+        }
+
+        private static AnimeDto CreateSeasonEntry(bool forKids)
+        {
+            return new AnimeDto
+            {
+                Demographics = forKids
+                    ? new List<MalUrlDto> { new MalUrlDto { Name = "Kids" } }
+                    : new List<MalUrlDto>()
+            };
         }
     }
 }

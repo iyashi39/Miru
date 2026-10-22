@@ -8,10 +8,11 @@ using MiruDatabaseLogicLayer;
 using MiruLibrary.Models;
 using Miru.ViewModels;
 using System.Windows;
-using JikanDotNet;
+using MyInternetConnectionLibrary.Anime;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using MiruLibrary.Settings;
 using MiruLibrary;
 using System.IO.Abstractions;
@@ -56,19 +57,9 @@ namespace Miru
             builder.RegisterType<SimpleContentDialog>().As<ISimpleContentDialog>();
             builder.RegisterType<CurrentSeasonModel>().As<ICurrentSeasonModel>();
             builder.RegisterType<CurrentUserAnimeListModel>().As<ICurrentUserAnimeListModel>();
-            builder.RegisterType<Jikan>().As<IJikan>()
-                // dev API endpoint
-#if DEBUG
-                .WithParameter(new TypedParameter(typeof(string), "http://localhost:9000/v3/"))
-                // prod API endpoint
-#else
-                .WithParameters(
-                new[]
-                {
-                    new NamedParameter("surpressException", false),
-                    new NamedParameter("useHttps", true)
-                })
-#endif
+            // the url of the anime api (Jikan REST API v4) is taken from the user settings
+            builder.Register(ctx => new AnimeApiClient(new HttpClient(), ctx.Resolve<UserSettings>().AnimeApiBaseUrl))
+                .As<IAnimeApiClient>()
                 .SingleInstance();
             builder.RegisterType<ToastNotifierWrapper>().As<IToastNotifierWrapper>();
             builder.RegisterType<MiruAnimeModelProcessor>().As<IMiruAnimeModelProcessor>();

@@ -1,8 +1,8 @@
-﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
+// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
 // Licensed under the GNU General Public License v3.0,
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
-using JikanDotNet;
+using MyInternetConnectionLibrary.Anime;
 using MiruLibrary;
 using MiruLibrary.Models;
 using MiruLibrary.Services;
@@ -32,7 +32,7 @@ namespace MiruDatabaseLogicLayer
         // constructor
         public MiruDbService(
             IUserDataService userDataService,
-            IJikan jikanWrapper, 
+            IAnimeApiClient animeApiClient, 
             Func<IMiruDbContext> createMiruDbContext, 
             IWebService webService, 
             Lazy<IFileSystemService> fileSystemService,
@@ -42,7 +42,7 @@ namespace MiruDatabaseLogicLayer
 
             CurrentSeason = userDataService.CurrentSeasonModel;
             CurrentUserAnimeList = userDataService.CurrentUserAnimeListModel;
-            JikanWrapper = jikanWrapper;
+            AnimeApiClient = animeApiClient;
             SyncedMyAnimeListUser = userDataService.SyncedMyAnimeListUser;
             WebService = webService;
             CreateMiruDbContext = createMiruDbContext;
@@ -54,7 +54,7 @@ namespace MiruDatabaseLogicLayer
 
         private Lazy<IFileSystemService> FileSystemService { get; }
         public IWebService WebService { get; }
-        private IJikan JikanWrapper { get; }
+        private IAnimeApiClient AnimeApiClient { get; }
         private ISyncedMyAnimeListUser SyncedMyAnimeListUser { get; }
         private Func<IMiruDbContext> CreateMiruDbContext { get; }
         private Func<MiruAnimeModel> CreateMiruAnimeModel { get; }
@@ -292,7 +292,7 @@ namespace MiruDatabaseLogicLayer
         /// <param name="db">Context of the database that is going to be updated.</param>
         /// <param name="currentUserAnimeListEntries">Collection of AnimeListEntries that are going to receive broadcast time data.</param>
         /// <returns>List of Anime models with all details required for further operations.</returns>
-        public async Task<List<MiruAnimeModel>> GetDetailedUserAnimeList(IMiruDbContext db, ICollection<AnimeListEntry> currentUserAnimeListEntries, bool seasonSyncOn)
+        public async Task<List<MiruAnimeModel>> GetDetailedUserAnimeList(IMiruDbContext db, ICollection<AnimeDto> currentUserAnimeListEntries, bool seasonSyncOn)
         {
             // get anime data from the db
             var detailedUserAnimeList = db.MiruAnimeModels.ToList();
@@ -310,12 +310,12 @@ namespace MiruDatabaseLogicLayer
                 foreach (var animeListEntry in currentUserAnimeListEntries)
                 {
                     // local variable that temporarily stores detailed anime info from the jikan API
-                    Anime animeInfo;
+                    AnimeDto animeInfo;
 
                     // try to get detailed anime info from the jikan API
                     try
                     {
-                        animeInfo = await WebService.TryToGetAnimeInfo(animeListEntry.MalId, 10, JikanWrapper);
+                        animeInfo = await WebService.TryToGetAnimeInfo(animeListEntry.MalId ?? 0, 10, AnimeApiClient);
                     }
                     catch (NoInternetConnectionException)
                     {
@@ -325,17 +325,17 @@ namespace MiruDatabaseLogicLayer
                     string localImagePath;
 
                     // if the anime is already in the db just set IsOnWatchingList flag instead of adding it again
-                    if (malIdsFromDb.Contains(animeListEntry.MalId))
+                    if (malIdsFromDb.Contains(animeListEntry.MalId ?? 0))
                     {
                         var modelToBeUpdated = detailedUserAnimeList.FirstOrDefault(x => x.MalId == animeListEntry.MalId);
                         modelToBeUpdated.IsOnWatchingList = true;
-                        modelToBeUpdated.WatchedEpisodes = animeListEntry.WatchedEpisodes;
-                        modelToBeUpdated.TotalEpisodes = animeListEntry.TotalEpisodes;
-                        modelToBeUpdated.CurrentlyAiring = (animeListEntry.AiringStatus == AiringStatus.Airing);
+                        modelToBeUpdated.WatchedEpisodes = animeListEntry.WatchedEpisodes ?? 0;
+                        modelToBeUpdated.TotalEpisodes = animeListEntry.TotalEpisodes ?? animeInfo.Episodes ?? 0;
+                        modelToBeUpdated.CurrentlyAiring = MiruAnimeModelExtensions.IsAiring(animeListEntry);
                         localImagePath = modelToBeUpdated.LocalImagePath;
                         modelToBeUpdated.UpdateDroppedStatus(CurrentUserAnimeList);
-                        modelToBeUpdated.OpeningThemes = JsonConvert.SerializeObject(animeInfo.OpeningTheme);
-                        modelToBeUpdated.EndingThemes = JsonConvert.SerializeObject(animeInfo.EndingTheme);
+                        modelToBeUpdated.OpeningThemes = JsonConvert.SerializeObject(MiruAnimeModelExtensions.GetOpeningTheme(animeInfo));
+                        modelToBeUpdated.EndingThemes = JsonConvert.SerializeObject(MiruAnimeModelExtensions.GetEndingTheme(animeInfo));
                     }
                     else
                     {
@@ -347,7 +347,7 @@ namespace MiruDatabaseLogicLayer
                         localImagePath = animeModel.LocalImagePath;
                     }
 
-                    FileSystemService.Value.DownloadFile(client, localImagePath, animeInfo.ImageURL);
+                    FileSystemService.Value.DownloadFile(client, localImagePath, MiruAnimeModelExtensions.GetImageUrl(animeInfo));
                     currentCompletedCount++;
                     UpdateSyncProgress(nameof(GetDetailedUserAnimeList), currentCompletedCount);
                 }
@@ -379,16 +379,16 @@ namespace MiruDatabaseLogicLayer
             // add season animes that are not a part of miruAnimeModelsList
             foreach (var seasonEntry in currentFilteredSeasonList)
             {
-                if (airingAnimesMalIDs.Contains(seasonEntry.MalId))
+                if (airingAnimesMalIDs.Contains(seasonEntry.MalId ?? 0))
                 {
-                    var modelToBeUpdated = detailedUserAnimeList.FirstOrDefault(x => x.MalId == seasonEntry.MalId);
+                    var modelToBeUpdated = detailedUserAnimeList.FirstOrDefault(x => x.MalId == (seasonEntry.MalId ?? 0));
                     modelToBeUpdated.CurrentlyAiring = true;
                     modelToBeUpdated.UpdateDroppedStatus(CurrentUserAnimeList);
                     // Anime rating update if it becomes different after season started
-                    Anime animeInfo;
+                    AnimeDto animeInfo;
                     try
                     {
-                        animeInfo = await WebService.TryToGetAnimeInfo(seasonEntry.MalId, 10, JikanWrapper);
+                        animeInfo = await WebService.TryToGetAnimeInfo(seasonEntry.MalId ?? 0, 10, AnimeApiClient);
                     }
                     catch (NoInternetConnectionException)
                     {
@@ -400,21 +400,21 @@ namespace MiruDatabaseLogicLayer
                     }
                     if (modelToBeUpdated.OpeningThemes == null || modelToBeUpdated.OpeningThemes == "OP\n")
                     {
-                        modelToBeUpdated.OpeningThemes = JsonConvert.SerializeObject(animeInfo.OpeningTheme);
+                        modelToBeUpdated.OpeningThemes = JsonConvert.SerializeObject(MiruAnimeModelExtensions.GetOpeningTheme(animeInfo));
                     }
                     if (modelToBeUpdated.EndingThemes == null || modelToBeUpdated.EndingThemes == "ED\n")
                     {
-                        modelToBeUpdated.EndingThemes = JsonConvert.SerializeObject(animeInfo.EndingTheme);
+                        modelToBeUpdated.EndingThemes = JsonConvert.SerializeObject(MiruAnimeModelExtensions.GetEndingTheme(animeInfo));
                     }
                 }
                 else
                 {
                     // local variable that temporarily stores detailed anime info from the jikan API
-                    Anime animeInfo;
+                    AnimeDto animeInfo;
                     // get detailed anime info from the jikan API
                     try
                     {
-                        animeInfo = await WebService.TryToGetAnimeInfo(seasonEntry.MalId, 10, JikanWrapper);
+                        animeInfo = await WebService.TryToGetAnimeInfo(seasonEntry.MalId ?? 0, 10, AnimeApiClient);
                     }
                     catch (NoInternetConnectionException)
                     {
@@ -427,7 +427,7 @@ namespace MiruDatabaseLogicLayer
                     // add airing anime created from the animeInfo data to the miruAnimeModelsList
                     detailedUserAnimeList.Add(animeModel);
 
-                    FileSystemService.Value.DownloadFile(client, localImagePath, animeInfo.ImageURL);
+                    FileSystemService.Value.DownloadFile(client, localImagePath, MiruAnimeModelExtensions.GetImageUrl(animeInfo));
                 }
                 currentCompletedCount++;
                 UpdateSyncProgress(nameof(GetDetailedSeasonAnimeListInfo), currentCompletedCount);

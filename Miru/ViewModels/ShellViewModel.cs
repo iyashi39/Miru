@@ -595,7 +595,9 @@ namespace Miru.ViewModels
         // saves anime title to the clipboard and shows notification describing this action
         public void CopyAnimeTitleToClipboard(string animeTitle)
         {
-            System.Windows.Clipboard.SetDataObject(animeTitle);
+            // the copy flag makes sure that the data stays on the clipboard after the
+            // clipboard object is released (needed on .NET, the data gets lost otherwise)
+            System.Windows.Clipboard.SetDataObject(animeTitle, true);
             var animeTitleCopiedMessage = PrepareAnimeTitleCopiedNotification(animeTitle);
             ToastNotifierWrapper.DisplayToastNotification(animeTitleCopiedMessage);
         }

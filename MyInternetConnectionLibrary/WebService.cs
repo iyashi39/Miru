@@ -1,8 +1,8 @@
-﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
+﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39
 // Licensed under the GNU General Public License v3.0,
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
-using JikanDotNet;
+using MyInternetConnectionLibrary.Anime;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -22,23 +22,28 @@ namespace MyInternetConnectionLibrary
         public Func<IWebClientWrapper> CreateWebClient { get; private set; }
 
         // tries to get the detailed anime information about anime with the given mal id, retries after given delay until the internet connection is working
-        public async Task<Anime> TryToGetAnimeInfo(long malId, int millisecondsDelay, IJikan jikanWrapper)
+        public async Task<AnimeDto> TryToGetAnimeInfo(long malId, int millisecondsDelay, IAnimeApiClient animeApiClient)
         {
-            Anime output = null;
+            AnimeDto output = null;
 
             // if there is no response from API wait for the given time and retry
             while (output == null)
             {
                 try
                 {
-                    // get detailed anime info from the jikan API
-                    output = await jikanWrapper.GetAnime(malId);
+                    // get detailed anime info from the api (the full endpoint contains the opening/ending themes)
+                    output = await animeApiClient.GetAnimeFullAsync(malId);
                 }
                 catch (HttpRequestException)
                 {
                     throw new NoInternetConnectionException("No internet connection");
                 }
-                catch (JikanDotNet.Exceptions.JikanRequestException)
+                catch (AnimeApiNotFoundException)
+                {
+                    // the anime does not exist anymore, there is no point in retrying
+                    throw;
+                }
+                catch (AnimeApiException)
                 {
                     await Task.Delay(millisecondsDelay);
                 }

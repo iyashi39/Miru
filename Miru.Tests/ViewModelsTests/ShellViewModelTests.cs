@@ -4,7 +4,7 @@
 
 using Autofac;
 using Autofac.Extras.Moq;
-using JikanDotNet;
+using MyInternetConnectionLibrary.Anime;
 using Microsoft.Win32;
 using Miru.ViewModels;
 using MiruDatabaseLogicLayer;
@@ -28,6 +28,7 @@ using Xunit;
 // G:\NuGetPackages\reportgenerator\5.0.4\tools\net47\ReportGenerator.exe "-reports:G:\repos\Miru\Miru.Tests\TestResults\091fcb43-46cf-4638-bbe6-dc5ab617672a\coverage.cobertura.xml" "-targetdir:G:\repos\Miru\coveragereport" -reporttypes:Html
 namespace Miru.Tests
 {
+    [Collection("Clipboard")]
     public class ShellViewModelTests
     {
         #region methods tests
@@ -385,7 +386,7 @@ namespace Miru.Tests
         {
             using (var mock = AutoMock.GetLoose())
             {
-                var expectedErrorMessage = "3939🔥🔥🔥";
+                var expectedErrorMessage = "3939Ă„â€ÄąĹźĂ˘â‚¬ĹĄĂ„â€žĂ„â€ÄąĹźĂ˘â‚¬ĹĄĂ„â€žĂ„â€ÄąĹźĂ˘â‚¬ĹĄĂ„â€ž";
                 mock.Mock<ICurrentUserAnimeListModel>()
                     .Setup(x => x.GetCurrentUserDroppedAnimeList(It.IsAny<string>()))
                     .ReturnsAsync((false, expectedErrorMessage));
@@ -543,23 +544,88 @@ namespace Miru.Tests
             {
                 // Arrange
                 var cls = mock.Create<ShellViewModel>();
+                cls.ToastNotifierWrapper = mock.Mock<IToastNotifierWrapper>().Object;
                 var testValue = "dydnie";
+                Exception exceptionInThread = null;
                 
                 Thread staThread = new Thread(() =>
                 {
-                    var clipboardContentBeforeTest = System.Windows.Clipboard.GetText();
-
-                    // Act
-                    cls.CopyAnimeTitleToClipboard(testValue);
-
-                    // Assert
-                    Assert.Equal(testValue, System.Windows.Clipboard.GetText());
-                    System.Windows.Clipboard.SetText(clipboardContentBeforeTest);
+                    try
+                    {
+                        // Act
+                        CopyToClipboardAndAssert(() => cls.CopyAnimeTitleToClipboard(testValue), testValue);
+                    }
+                    catch (Exception e)
+                    {
+                        // exceptions thrown in a thread are not caught by the test framework,
+                        // they have to be passed to the main thread explicitly
+                        exceptionInThread = e;
+                    }
                 });
                 staThread.SetApartmentState(ApartmentState.STA);
                 staThread.Start();
                 staThread.Join();
+                
+                // Assert
+                Assert.Null(exceptionInThread);
             }
+        }
+
+        /// <summary>
+        /// The OLE clipboard is a global resource and it sometimes silently refuses to accept
+        /// new data, so the copy is repeated a couple of times before the check.
+        /// </summary>
+        private static void CopyToClipboardAndAssert(Action copyAction, string expectedContent)
+        {
+            const int maxAttempts = 5;
+
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                copyAction();
+                Thread.Sleep(50);
+
+                try
+                {
+                    if (System.Windows.Clipboard.GetText() == expectedContent)
+                    {
+                        return;
+                    }
+                }
+                catch (Exception)
+                {
+                    // the clipboard can be temporarily locked by another process
+                }
+            }
+
+            Assert.Equal(expectedContent, System.Windows.Clipboard.GetText());
+        }
+
+        /// <summary>
+        /// The OLE clipboard is a global resource and it sometimes refuses to hand out
+        /// the data that was just written to it, so the check is repeated a couple of times.
+        /// </summary>
+        private static void AssertClipboardContains(string expectedContent)
+        {
+            const int maxAttempts = 5;
+
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                try
+                {
+                    if (System.Windows.Clipboard.GetText() == expectedContent)
+                    {
+                        return;
+                    }
+                }
+                catch (Exception)
+                {
+                    // the clipboard can be temporarily locked by another process
+                }
+
+                Thread.Sleep(50);
+            }
+
+            Assert.Equal(expectedContent, System.Windows.Clipboard.GetText());
         }
 
 
@@ -570,13 +636,13 @@ namespace Miru.Tests
         {
             using (var mock = AutoMock.GetLoose())
             {
-                string testData = "🦂💯";
-                mock.Mock<ISystemService>().Setup(x => x.StartProcess(It.IsAny<string>())).Returns<Process>(null);
+                string testData = "Ă„â€ÄąĹźĂ‚Â¦Ă˘â‚¬ĹˇĂ„â€ÄąĹźĂ˘â‚¬â„˘ÄąÂ»";
+                mock.Mock<ISystemService>().Setup(x => x.OpenUrl(It.IsAny<string>())).Returns<Process>(null);
                 var cls = mock.Create<ShellViewModel>();
 
                 var result = cls.OpenAnimeURL(testData);
 
-                mock.Mock<ISystemService>().Verify(x => x.StartProcess(testData), Times.Once);
+                mock.Mock<ISystemService>().Verify(x => x.OpenUrl(testData), Times.Once);
                 Assert.Null(result);
             }
         }
@@ -587,7 +653,7 @@ namespace Miru.Tests
         {
             using (var mock = AutoMock.GetLoose())
             {
-                var expectedErrorMessage = "3939🔥🔥🔥";
+                var expectedErrorMessage = "3939Ă„â€ÄąĹźĂ˘â‚¬ĹĄĂ„â€žĂ„â€ÄąĹźĂ˘â‚¬ĹĄĂ„â€žĂ„â€ÄąĹźĂ˘â‚¬ĹĄĂ„â€ž";
                 mock.Mock<ICurrentUserAnimeListModel>()
                     .Setup(x => x.GetCurrentUserDroppedAnimeList(It.IsAny<string>()))
                     .ReturnsAsync((false, expectedErrorMessage));
@@ -668,8 +734,11 @@ namespace Miru.Tests
                 var title = "test";
                 var opThemes = "\"Title\" by Artist\n\"title2\" by artist2 ";
                 var edThemes = "";
+                Exception exceptionInThread = null;
                 Thread staThread = new Thread(() =>
                 {
+                    try
+                    {
                     cls.OpenCopySongDataDialog(title, opThemes, edThemes).Wait();
                     Assert.Equal(MiruAppStatus.Idle, cls.AppStatus);
                     mock.Mock<ISimpleContentDialog>()
@@ -684,10 +753,20 @@ namespace Miru.Tests
                         ),
                         Times.Once);
                     mock.Mock<ISimpleContentDialog>().Verify(x => x.ShowAsync(), Times.Once);
+                    }
+                    catch (Exception e)
+                    {
+                        // exceptions thrown in a thread are not caught by the test framework,
+                        // they have to be passed to the main thread explicitly
+                        exceptionInThread = e;
+                    }
                 });
                 staThread.SetApartmentState(ApartmentState.STA);
                 staThread.Start();
                 staThread.Join();
+                
+                // Assert
+                Assert.Null(exceptionInThread);
             }
         }
 
@@ -704,8 +783,11 @@ namespace Miru.Tests
                 var title = "test";
                 var opThemes = "\"Title\" by Artist\n\"title2\" by artist2 ";
                 var edThemes = "";
+                Exception exceptionInThread = null;
                 Thread staThread = new Thread(() =>
                 {
+                    try
+                    {
                     var clipboardContentBeforeTest = System.Windows.Clipboard.GetText();
 
                     // Act
@@ -725,11 +807,21 @@ namespace Miru.Tests
                         ),
                         Times.Once);
                     mock.Mock<ISimpleContentDialog>().Verify(x => x.ShowAsync(), Times.Once);
-                    Assert.Equal("Title Artist\ntitle2 artist2\n", System.Windows.Clipboard.GetText());
+                    AssertClipboardContains("Title Artist\ntitle2 artist2\n");
+                    }
+                    catch (Exception e)
+                    {
+                        // exceptions thrown in a thread are not caught by the test framework,
+                        // they have to be passed to the main thread explicitly
+                        exceptionInThread = e;
+                    }
                 });
                 staThread.SetApartmentState(ApartmentState.STA);
                 staThread.Start();
                 staThread.Join();
+                
+                // Assert
+                Assert.Null(exceptionInThread);
             }
         }
 
@@ -746,8 +838,11 @@ namespace Miru.Tests
                 var title = "test";
                 var opThemes = "";
                 var edThemes = "\"ending\" by Artist\n\"ending2\" by artist2 ";
+                Exception exceptionInThread = null;
                 Thread staThread = new Thread(() =>
                 {
+                    try
+                    {
                     var clipboardContentBeforeTest = System.Windows.Clipboard.GetText();
 
                     // Act
@@ -767,11 +862,21 @@ namespace Miru.Tests
                         ),
                         Times.Once);
                     mock.Mock<ISimpleContentDialog>().Verify(x => x.ShowAsync(), Times.Once);
-                    Assert.Equal("ending Artist\nending2 artist2\n", System.Windows.Clipboard.GetText());
+                    AssertClipboardContains("ending Artist\nending2 artist2\n");
+                    }
+                    catch (Exception e)
+                    {
+                        // exceptions thrown in a thread are not caught by the test framework,
+                        // they have to be passed to the main thread explicitly
+                        exceptionInThread = e;
+                    }
                 });
                 staThread.SetApartmentState(ApartmentState.STA);
                 staThread.Start();
                 staThread.Join();
+                
+                // Assert
+                Assert.Null(exceptionInThread);
             }
         }
         #endregion methods tests
@@ -1169,7 +1274,7 @@ namespace Miru.Tests
                 int testTotalCount = 39;
                 int testCurrentCount = 7;
                 mock.Mock<IMiruDbService>().Setup(x => x.CurrentUserAnimeList.UserAnimeListData)
-                    .Returns(new JikanDotNet.UserAnimeList { Anime = new AnimeListEntry[39] });
+                    .Returns(new UserAnimeList { Anime = new List<AnimeDto>(new AnimeDto[39]) });
                 var sut = mock.Create<ShellViewModel>();
                 var testValue = nameof(MiruDbService.GetDetailedUserAnimeList);
 
@@ -1192,7 +1297,7 @@ namespace Miru.Tests
                 int testTotalCount = 39;
                 int testCurrentCount = 7;
                 mock.Mock<IMiruDbService>().Setup(x => x.CurrentSeason.GetFilteredSeasonList())
-                    .Returns(new List<AnimeSubEntry>(new AnimeSubEntry[testTotalCount]));
+                    .Returns(new List<AnimeDto>(new AnimeDto[testTotalCount]));
                 var sut = mock.Create<ShellViewModel>();
                 var testValue = "GetDetailedSeasonAnimeListInfo";
 

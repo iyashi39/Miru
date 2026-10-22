@@ -4,7 +4,7 @@
 
 using Autofac;
 using Autofac.Extras.Moq;
-using JikanDotNet;
+using MyInternetConnectionLibrary.Anime;
 using MiruLibrary;
 using MiruLibrary.Models;
 using Moq;
@@ -181,37 +181,44 @@ namespace Miru.Tests.ModelsTests
         const string IMAGE_URL = "KEKW";
         const string TYPE = "TV";
         const int TOTAL_EPISODES = 777;
-        const string URL = "🐙";
+        const string URL = "đź™";
         const int WATCHED_EPISODES = 39;
 
         public static IEnumerable<object[]> PrepareDataForSetAiringAnimeModelData()
         {
-            yield return new object[] { AiringStatus.Airing, "not null", null };
-            yield return new object[] { AiringStatus.Completed, null, null };
-            yield return new object[] { AiringStatus.Completed, null, new TimePeriod() { From = new DateTime(2022, 3, 14) } };
+            yield return new object[] { true, "Sundays", "17:00", "JST", "Sundays at 17:00 (JST)", null };
+            yield return new object[] { false, null, null, null, null, null };
+            yield return new object[] { false, null, null, null, null, new DateTimeOffset(2022, 3, 14, 0, 0, 0, TimeSpan.Zero) };
         }
 
         [Theory]
         [MemberData(nameof(PrepareDataForSetAiringAnimeModelData))]
-        public void SetAiringAnimeModelData_GivenValidInput_SetsDataCorrectly(AiringStatus airingStatus, string broadcast, TimePeriod timePeriod)
+        public void SetAiringAnimeModelData_GivenValidInput_SetsDataCorrectly(bool airing, string broadcastDay,
+            string broadcastTime, string broadcastTimezone, string broadcastString, DateTimeOffset? airedFrom)
         {
             // Arrange
             var sut = new MiruAnimeModel();
-            var animeInfo = new Anime()
+            var animeInfo = new AnimeDto
             {
                 MalId = MAL_ID,
-                Broadcast = broadcast,
+                Broadcast = broadcastDay == null ? null : new BroadcastDto
+                {
+                    Day = broadcastDay,
+                    Time = broadcastTime,
+                    Timezone = broadcastTimezone,
+                    String = broadcastString
+                },
                 Title = TITLE,
-                ImageURL = IMAGE_URL,
+                Images = new AnimeImagesDto { Jpg = new ImageDto { LargeImageUrl = IMAGE_URL } },
                 Type = TYPE,
-                Aired = timePeriod
+                Aired = airedFrom == null ? null : new TimePeriodDto { From = airedFrom }
             };
-            var animeListEntry = new AnimeListEntry()
+            var animeListEntry = new AnimeDto
             {
                 TotalEpisodes = TOTAL_EPISODES,
-                URL = URL,
+                Url = URL,
                 WatchedEpisodes = WATCHED_EPISODES,
-                AiringStatus = airingStatus
+                Airing = airing
             };
 
             // Act
@@ -227,8 +234,8 @@ namespace Miru.Tests.ModelsTests
             Assert.Equal(TYPE, sut.Type);
             Assert.True(sut.IsOnWatchingList);
             Assert.Equal(Path.Combine(Constants.ImageCacheFolderPath, $"{MAL_ID}.jpg"), sut.LocalImagePath);
-            Assert.Equal(airingStatus == AiringStatus.Airing, sut.CurrentlyAiring);
-            Assert.Equal(broadcast ?? animeInfo.Aired?.From.ToString(), sut.Broadcast);
+            Assert.Equal(airing, sut.CurrentlyAiring);
+            Assert.Equal(broadcastDay == null ? animeInfo.Aired?.From.ToString() : broadcastString, sut.Broadcast);
             Assert.False(sut.Dropped);
         }
 
@@ -239,17 +246,17 @@ namespace Miru.Tests.ModelsTests
             {
                 // Arrange
                 var sut = new MiruAnimeModel();
-                var animeInfo = new Anime()
+                var animeInfo = new AnimeDto
                 {
                     MalId = MAL_ID,
                 };
-                var animeListEntry = new AnimeListEntry()
+                var animeListEntry = new AnimeDto
                 {
                     MalId = MAL_ID,
                 };
                 var currentUserAnimeList = new UserAnimeList
                 {
-                    Anime = new List<AnimeListEntry> { animeListEntry }
+                    Anime = new List<AnimeDto> { animeListEntry }
                 };
                 autoMock.Mock<ICurrentUserAnimeListModel>()
                     .SetupGet(x => x.UserDroppedAnimeListData)
@@ -264,25 +271,31 @@ namespace Miru.Tests.ModelsTests
         }
 
         [Theory]
-        [InlineData("not null")]
-        [InlineData(null)]
-        public void SetSeasonalAnimeModelData_ValidInput_SetsDataCorrectly(string broadcast)
+        [InlineData("Sundays", "17:00", "JST", "Sundays at 17:00 (JST)")]
+        [InlineData(null, null, null, null)]
+        public void SetSeasonalAnimeModelData_ValidInput_SetsDataCorrectly(string broadcastDay, string broadcastTime, string broadcastTimezone, string broadcastString)
         {
             // Arrange
             var sut = new MiruAnimeModel();
-            DateTime airedFromDate = new DateTime(2022, 3, 14);
-            var animeInfo = new Anime()
+            DateTimeOffset airedFromDate = new DateTimeOffset(2022, 3, 14, 0, 0, 0, TimeSpan.Zero);
+            var animeInfo = new AnimeDto
             {
                 MalId = MAL_ID,
-                Broadcast = broadcast,
+                Broadcast = broadcastDay == null ? null : new BroadcastDto
+                {
+                    Day = broadcastDay,
+                    Time = broadcastTime,
+                    Timezone = broadcastTimezone,
+                    String = broadcastString
+                },
                 Title = TITLE,
-                ImageURL = IMAGE_URL,
+                Images = new AnimeImagesDto { Jpg = new ImageDto { LargeImageUrl = IMAGE_URL } },
                 Type = TYPE,
-                Aired = new TimePeriod() { From = airedFromDate }
+                Aired = new TimePeriodDto() { From = airedFromDate }
             };
-            var animeSubEntry = new AnimeSubEntry()
+            var animeSubEntry = new AnimeDto()
             {
-                URL = URL,
+                Url = URL,
             };
 
             // Act
@@ -297,7 +310,7 @@ namespace Miru.Tests.ModelsTests
             Assert.False(sut.IsOnWatchingList);
             Assert.Equal(Path.Combine(Constants.ImageCacheFolderPath, $"{ MAL_ID }.jpg"), sut.LocalImagePath);
             Assert.True(sut.CurrentlyAiring);
-            Assert.Equal(broadcast ?? airedFromDate.ToString(), sut.Broadcast);
+            Assert.Equal(broadcastDay == null ? airedFromDate.ToString() : broadcastString, sut.Broadcast);
             Assert.False(sut.Dropped);
         }
 
@@ -308,19 +321,19 @@ namespace Miru.Tests.ModelsTests
             {
                 // Arrange
                 var sut = new MiruAnimeModel();
-                var animeInfo = new Anime()
+                var animeInfo = new AnimeDto()
                 {
                     MalId = MAL_ID,
                 };
-                var animeListEntry = new AnimeSubEntry()
+                var animeListEntry = new AnimeDto()
                 {
                     MalId = MAL_ID,
                 };
                 var currentUserAnimeList = new UserAnimeList
                 {
-                    Anime = new List<AnimeListEntry> 
+                    Anime = new List<AnimeDto> 
                     {
-                        new AnimeListEntry { MalId = MAL_ID }
+                        new AnimeDto { MalId = MAL_ID }
                     }
                 };
                 autoMock.Mock<ICurrentUserAnimeListModel>()
@@ -414,7 +427,7 @@ namespace Miru.Tests.ModelsTests
             {
                 UserAnimeList userAnimeList = new UserAnimeList()
                 {
-                    Anime = new List<AnimeListEntry> { new AnimeListEntry { MalId = 2137 } }
+                    Anime = new List<AnimeDto> { new AnimeDto { MalId = 2137 } }
                 };
                 var sut = new MiruAnimeModel() { MalId = 2137};
                 autoMock.Mock<ICurrentUserAnimeListModel>()

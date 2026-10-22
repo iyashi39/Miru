@@ -1,14 +1,15 @@
-﻿// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
+// Copyright (c) 2022 iyashi39 @ https://github.com/iyashi39 
 // Licensed under the GNU General Public License v3.0,
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
 using Autofac.Extras.Moq;
-using JikanDotNet;
-using JikanDotNet.Exceptions;
 using MiruLibrary.Models;
 using Moq;
+using MyInternetConnectionLibrary.Anime;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -22,8 +23,8 @@ namespace Miru.Tests.ModelsTests
             using (var mock = AutoMock.GetLoose())
             {
                 // Arrange
-                mock.Mock<IJikan>()
-                    .Setup(x => x.GetUserAnimeList(It.IsAny<string>(), UserAnimeListExtension.Watching))
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetUserAnimeListAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new HttpRequestException());
                 var expectedErrorMessage = "Problems with internet connection!";
                 var sut = mock.Create<CurrentUserAnimeListModel>();
@@ -38,14 +39,14 @@ namespace Miru.Tests.ModelsTests
         }
 
         [Fact]
-        public async Task GetCurrentUserAnimeList_OnJikanRequestException_ReturnsFalseAndExpectedErrorMessage()
+        public async Task GetCurrentUserAnimeList_OnAnimeApiNotFoundException_ReturnsFalseAndExpectedErrorMessage()
         {
             using (var mock = AutoMock.GetLoose())
             {
                 // Arrange
-                mock.Mock<IJikan>()
-                    .Setup(x => x.GetUserAnimeList(It.IsAny<string>(), UserAnimeListExtension.Watching))
-                    .ThrowsAsync(new JikanRequestException());
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetUserAnimeListAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(new AnimeApiNotFoundException("not found"));
                 var expectedErrorMessage = $"Could not find the user \"{ It.IsAny<string>() }\". Please make sure you typed in the name correctly.";
                 var sut = mock.Create<CurrentUserAnimeListModel>();
 
@@ -64,9 +65,9 @@ namespace Miru.Tests.ModelsTests
             using (var mock = AutoMock.GetLoose())
             {
                 // Arrange
-                mock.Mock<IJikan>()
-                    .Setup(x => x.GetUserAnimeList(It.IsAny<string>(), UserAnimeListExtension.Watching))
-                    .ReturnsAsync(new UserAnimeList());
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetUserAnimeListAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new UserAnimeListPageEnvelope { Data = new List<UserAnimeListEntryDto>() });
                 var expectedErrorMessage = string.Empty;
                 var sut = mock.Create<CurrentUserAnimeListModel>();
 
@@ -76,6 +77,39 @@ namespace Miru.Tests.ModelsTests
                 // Assert
                 Assert.True(result);
                 Assert.Equal(expectedErrorMessage, errorMessage);
+            }
+        }
+
+        [Fact]
+        public async Task GetCurrentUserAnimeList_FiltersEntriesByWatchingStatus()
+        {
+            using (var mock = AutoMock.GetLoose())
+            {
+                // Arrange
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetUserAnimeListAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new UserAnimeListPageEnvelope
+                    {
+                        Data = new List<UserAnimeListEntryDto>
+                        {
+                            CreateEntry(1, 1, 5),      // watching
+                            CreateEntry(2, 2, 12),     // completed
+                            CreateEntry(3, 4, 3),      // dropped
+                            CreateEntry(4, 1, 7),      // watching
+                        }
+                    });
+                var sut = mock.Create<CurrentUserAnimeListModel>();
+
+                // Act
+                var (result, errorMessage) = await sut.GetCurrentUserAnimeList(It.IsAny<string>());
+
+                // Assert
+                Assert.True(result);
+                Assert.Equal(2, sut.UserAnimeListData.Anime.Count);
+                Assert.Equal(1, sut.UserAnimeListData.Anime[0].MalId);
+                Assert.Equal(4, sut.UserAnimeListData.Anime[1].MalId);
+                Assert.Equal(5, sut.UserAnimeListData.Anime[0].WatchedEpisodes);
+                Assert.Equal(12, sut.UserAnimeListData.Anime[0].TotalEpisodes);
             }
         }
 
@@ -89,12 +123,12 @@ namespace Miru.Tests.ModelsTests
             using (var mock = AutoMock.GetLoose())
             {
                 // Arrange
-                var testData = new UserAnimeList
+                var testData = new UserAnimeListPageEnvelope
                 {
-                    Anime = new AnimeListEntry[expectedDroppedAnimeCount]
+                    Data = CreateEntries(UserAnimeListStatus.Dropped, expectedDroppedAnimeCount)
                 };
-                mock.Mock<IJikan>()
-                    .Setup(x => x.GetUserAnimeList(It.IsAny<string>(), UserAnimeListExtension.Dropped, It.IsAny<int>()))
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetUserAnimeListAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(testData);
                 var sut = mock.Create<CurrentUserAnimeListModel>();
 
@@ -114,8 +148,8 @@ namespace Miru.Tests.ModelsTests
             using (var mock = AutoMock.GetLoose())
             {
                 // Arrange
-                mock.Mock<IJikan>()
-                    .Setup(x => x.GetUserAnimeList(It.IsAny<string>(), UserAnimeListExtension.Dropped, It.IsAny<int>()))
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetUserAnimeListAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new Exception());
                 var sut = mock.Create<CurrentUserAnimeListModel>();
 
@@ -138,31 +172,19 @@ namespace Miru.Tests.ModelsTests
             using (var mock = AutoMock.GetLoose())
             {
                 // Arrange
-                int pages = 0, restOfEntries = 0;
-                if (expectedDroppedAnimeCount % 300 == 0)
-                    pages = expectedDroppedAnimeCount / 300;
-                else if (expectedDroppedAnimeCount > 300)
-                {
-                    pages = (expectedDroppedAnimeCount - expectedDroppedAnimeCount % 300) / 300;
-                    restOfEntries = expectedDroppedAnimeCount % 300;
-                }
-                else
-                    restOfEntries = expectedDroppedAnimeCount % 300;
-                mock.Mock<IJikan>()
-                    .Setup(x => x.GetUserAnimeList(It.IsAny<string>(), UserAnimeListExtension.Dropped, It.IsAny<int>()))
+                const int pageSize = 300;
+                int entriesLeft = expectedDroppedAnimeCount;
+
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetUserAnimeListAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(() =>
                     {
-                        if(pages > 0)
+                        var entriesOnPage = Math.Min(pageSize, entriesLeft);
+                        entriesLeft -= entriesOnPage;
+
+                        return new UserAnimeListPageEnvelope
                         {
-                            pages--;
-                            return new UserAnimeList
-                            {
-                                Anime = new AnimeListEntry[300]
-                            };
-                        }
-                        return new UserAnimeList
-                        {
-                            Anime = new AnimeListEntry[restOfEntries]
+                            Data = CreateEntries(UserAnimeListStatus.Dropped, entriesOnPage),
                         };
                     });
                 var sut = mock.Create<CurrentUserAnimeListModel>();
@@ -175,6 +197,26 @@ namespace Miru.Tests.ModelsTests
                 Assert.Equal(string.Empty, errorMessage);
                 Assert.Equal(expectedDroppedAnimeCount, sut.UserDroppedAnimeListData.Anime.Count);
             }
+        }
+
+        private static UserAnimeListEntryDto CreateEntry(long malId, int status, int watchedEpisodes)
+        {
+            return new UserAnimeListEntryDto
+            {
+                WatchingStatus = status,
+                EpisodesWatched = watchedEpisodes,
+                Anime = new AnimeDto { MalId = malId, Episodes = 12 }
+            };
+        }
+
+        private static List<UserAnimeListEntryDto> CreateEntries(int status, int count)
+        {
+            var entries = new List<UserAnimeListEntryDto>();
+            for (int i = 0; i < count; i++)
+            {
+                entries.Add(CreateEntry(i + 1, status, 0));
+            }
+            return entries;
         }
     }
 }

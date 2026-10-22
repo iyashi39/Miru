@@ -12,5 +12,10 @@ namespace MiruLibrary.Models
         public AgeRating AgeRating { get; set; } = AgeRating.Any;
         public bool GetDroppedAnimeData { get; set; } = true;
         public double WatchingStatusHighlightOpacity { get; set; } = 0.66;
+
+        /// <summary>
+        /// Url of the anime api (Jikan REST API v4). The Tenrai API v1 uses the same schema.
+        /// </summary>
+        public string AnimeApiBaseUrl { get; set; } = Constants.DefaultAnimeApiBaseUrl;
     }
 }

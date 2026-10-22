@@ -30,5 +30,20 @@ namespace MiruDatabaseLogicLayer
         public virtual DbSet<SyncedMyAnimeListUser> SyncedMyAnimeListUsers { get; set; }
         public virtual DbSet<MiruAnimeModel> MiruAnimeModels { get; set; }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // the themes properties return a formatted value, so the database has to keep
+            // the raw json in the backing fields, otherwise the formatted value gets saved
+            // and cannot be parsed later
+            modelBuilder.Entity<MiruAnimeModel>()
+                .Property(x => x.OpeningThemes)
+                .HasField("_openingThemes");
+
+            modelBuilder.Entity<MiruAnimeModel>()
+                .Property(x => x.EndingThemes)
+                .HasField("_endingThemes");
+        }
     }
 }

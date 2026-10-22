@@ -3,12 +3,12 @@
 // go to https://github.com/iyashi39/Miru/blob/master/LICENSE for full license details.
 
 using Autofac.Extras.Moq;
-using JikanDotNet;
-using JikanDotNet.Exceptions;
 using Moq;
 using MyInternetConnectionLibrary;
+using MyInternetConnectionLibrary.Anime;
 using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -23,18 +23,20 @@ namespace Miru.Tests.MyInternetConnectionLibraryTests
             {
                 Func<IWebClientWrapper> mockWebClientFunc = () => { return Mock.Of<IWebClientWrapper>(); };
                 mock.Mock<IWebService>().Setup(x => x.CreateWebClient).Returns(mockWebClientFunc);
-                var testData = new Anime();
-                mock.Mock<IJikan>().Setup(x => x.GetAnime(It.IsAny<long>())).ReturnsAsync(testData);
+                var testData = new AnimeDto();
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetAnimeFullAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(testData);
                 var sut = mock.Create<WebService>();
 
-                var result = await sut.TryToGetAnimeInfo(default, default, mock.Mock<IJikan>().Object);
+                var result = await sut.TryToGetAnimeInfo(default, default, mock.Mock<IAnimeApiClient>().Object);
 
                 Assert.Equal(testData, result);
             }
         }
 
         [Fact]
-        public async Task TryToGetAnimeInfo_GivenJikanRequestException_RetryAndReturnAnime()
+        public async Task TryToGetAnimeInfo_GivenAnimeApiException_RetryAndReturnAnime()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -42,16 +44,17 @@ namespace Miru.Tests.MyInternetConnectionLibraryTests
                 mock.Mock<IWebService>()
                     .Setup(x => x.CreateWebClient)
                     .Returns(mockWebClientFunc);
-                var testData = new Anime();
-                mock.Mock<IJikan>()
-                    .SetupSequence(x => x.GetAnime(It.IsAny<long>()))
-                    .ThrowsAsync(new JikanRequestException())
+                var testData = new AnimeDto();
+                mock.Mock<IAnimeApiClient>()
+                    .SetupSequence(x => x.GetAnimeFullAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(new AnimeApiException("error"))
                     .ReturnsAsync(testData);
                 var sut = mock.Create<WebService>();
 
-                var result = await sut.TryToGetAnimeInfo(default, default, mock.Mock<IJikan>().Object);
+                var result = await sut.TryToGetAnimeInfo(default, default, mock.Mock<IAnimeApiClient>().Object);
 
-                mock.Mock<IJikan>().Verify(x => x.GetAnime(It.IsAny<long>()), Times.Exactly(2));
+                mock.Mock<IAnimeApiClient>()
+                    .Verify(x => x.GetAnimeFullAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
                 Assert.Equal(testData, result);
             }
         }
@@ -65,13 +68,13 @@ namespace Miru.Tests.MyInternetConnectionLibraryTests
                 mock.Mock<IWebService>()
                     .Setup(x => x.CreateWebClient)
                     .Returns(mockWebClientFunc);
-                mock.Mock<IJikan>()
-                    .Setup(x => x.GetAnime(It.IsAny<long>()))
+                mock.Mock<IAnimeApiClient>()
+                    .Setup(x => x.GetAnimeFullAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new HttpRequestException());
                 var sut = mock.Create<WebService>();
 
                 var result = await Assert.ThrowsAsync<NoInternetConnectionException>(
-                    () => sut.TryToGetAnimeInfo(default, default, mock.Mock<IJikan>().Object)
+                    () => sut.TryToGetAnimeInfo(default, default, mock.Mock<IAnimeApiClient>().Object)
                     );
                 Assert.Equal("No internet connection", result.Message);
             }
